@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rankings — BBX Ilocos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #19191b;
+    --surface: #232326;
+    --surface-raised: #2c2c30;
+    --line: #38383c;
+    --orange: #ff6a2b;
+    --orange-dim: #6b3a22;
+    --orange-glow: rgba(255,106,43,0.18);
+    --text: #f1efe9;
+    --text-muted: #9a9994;
+    --text-faint: #6c6b68;
+    --grey-ring: #55555a;
+    --radius: 14px;
+    --display: 'Saira Condensed', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- background texture ---------- */
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(255,106,43,0.06), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(255,106,43,0.04), transparent 45%);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(25,25,27,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; flex-wrap:wrap; row-gap:10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand-mark-wrap{width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-mark{width:30px; height:30px; flex-shrink:0;}
+  .brand-mark-img{width:100%; height:100%; object-fit:contain; border-radius:6px;}
+  .brand-text{font-family:var(--display); font-weight:700; font-size:1.3rem; letter-spacing:0.02em;}
+  .brand-text span{color:var(--orange);}
+  .nav-links{display:flex; align-items:center; gap:28px;}
+  .nav-links a{
+    font-size:0.92rem; color:var(--text-muted); text-decoration:none;
+    font-weight:500; transition:color 0.2s;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .week-pill{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.06em;
+    color:var(--orange); border:1px solid var(--orange-dim);
+    background:var(--orange-glow); padding:5px 11px; border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:72px 0 56px;
+    border-bottom:1px solid var(--line);
+    background-size:cover; background-position:center; transition:background-image 0.3s;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.14em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:16px; height:1px; background:var(--orange);}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .hero-sub{
+    color:var(--text-muted); font-size:1.05rem; max-width:480px; margin-top:18px;
+  }
+  .stat-strip{
+    display:flex; gap:0; margin-top:36px; border-top:1px solid var(--line);
+  }
+  .stat{
+    flex:1; padding:18px 20px 0; border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-num{font-family:var(--mono); font-weight:600; font-size:1.6rem; color:var(--orange);}
+  .stat-label{font-size:0.76rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.07em; margin-top:2px;}
+
+  .ring-outer{
+    transform-origin:150px 150px;
+    animation:spin 14s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .ring-outer{ animation:none; } }
+
+  /* ---------- section shell ---------- */
+  section{padding:64px 0;}
+  .section-head{margin-bottom:32px;}
+  .section-eyebrow{
+    font-family:var(--mono); font-size:0.76rem; letter-spacing:0.12em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:8px;
+  }
+  .section-title{
+    font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase;
+  }
+  .section-note{color:var(--text-muted); font-size:0.92rem; margin-top:6px;}
+
+  /* ---------- spotlight ---------- */
+  .spotlight-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;
+  }
+  .spotlight-photo-wrap{position:relative; width:96px; height:96px; flex-shrink:0;}
+  .spotlight-photo, .avatar-fallback{
+    width:96px; height:96px; border-radius:50%; object-fit:cover;
+    border:2px solid var(--orange);
+  }
+  .avatar-fallback{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); font-size:2.2rem; color:var(--orange);
+  }
+  .spotlight-name{font-family:var(--display); font-weight:700; font-size:1.7rem; text-transform:uppercase;}
+  .spotlight-team{color:var(--text-muted); font-size:0.92rem; margin-top:2px;}
+  .spotlight-tags{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .spotlight-points{text-align:right;}
+  .spotlight-points .stat-num{font-size:2.4rem;}
+  .spotlight-points .stat-label{text-align:right;}
+
+  .tag{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.04em;
+    padding:4px 10px; border-radius:100px; text-transform:uppercase;
+  }
+  .tag-champion{background:var(--orange); color:#19191b; font-weight:600;}
+  .tag-finalist{border:1px solid var(--orange); color:var(--orange);}
+  .tag-3rd, .tag-placer{border:1px solid var(--grey-ring); color:var(--text-muted);}
+  .tag-swiss-king{border:1px solid var(--text-faint); color:var(--text-muted); background:var(--surface-raised);}
+
+  /* ---------- leaderboard ---------- */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px;}
+  .segmented{
+    display:inline-flex; background:var(--surface); border:1px solid var(--line);
+    border-radius:100px; padding:4px;
+  }
+  .segmented button{
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    padding:9px 20px; border-radius:100px; transition:all 0.2s;
+  }
+  .segmented button.active{background:var(--orange); color:#19191b;}
+
+  .board-row{
+    display:grid; grid-template-columns:44px 40px 1.6fr 1fr 0.8fr 1fr 0.7fr;
+    gap:14px; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line);
+  }
+  .board-row.head{
+    font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-faint); border-bottom:1px solid var(--line);
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
+
+  .rank-ring{
+    position:relative; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:0.95rem;
+    border:2px solid var(--grey-ring); color:var(--text-muted);
+  }
+  .rank-ring.r1{border-color:var(--orange); color:var(--orange); box-shadow:0 0 0 3px var(--orange-glow);}
+  .rank-ring.r2{border-color:#c9793f; color:#e0a679;}
+  .rank-ring.r3{border-color:#8a5a3a; color:#b4886a;}
+
+  .board-photo, .board-avatar{width:36px; height:36px; border-radius:50%; object-fit:cover;}
+  .board-avatar{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); color:var(--orange); font-size:1rem;
+  }
+  .blader-cell{display:flex; align-items:center; gap:10px; min-width:0;}
+  .blader-name{font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:var(--text); text-decoration:none; transition:color 0.15s;}
+  .blader-name:hover{color:var(--orange); text-decoration:underline;}
+  .cell-label{display:none;}
+  .cell-team{color:var(--text-muted); font-size:0.88rem;}
+  .cell-wl{font-family:var(--mono); font-size:0.88rem;}
+  .cell-wl .w{color:var(--orange);}
+  .cell-topcut{font-family:var(--mono); font-size:0.88rem; color:var(--text-muted);}
+  .cell-points{font-family:var(--mono); font-weight:600; font-size:1.05rem; text-align:right; color:var(--text);}
+  .board-container{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .board-scroll{overflow-x:auto;}
+  .board-more-wrap{display:flex; justify-content:center; margin-top:18px;}
+  .board-more-btn{
+    font-family:var(--body); font-weight:600; font-size:0.86rem; color:var(--orange);
+    background:transparent; border:1px solid var(--orange-dim); padding:11px 26px; border-radius:8px;
+    cursor:pointer; transition:background 0.2s;
+  }
+  .board-more-btn:hover{background:var(--orange-glow);}
+
+  /* ---------- announcements ---------- */
+  .announce-grid{display:flex; flex-direction:column; gap:20px;}
+  .announce-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:grid; grid-template-columns:220px 1fr;
+  }
+  .announce-card.no-photo{grid-template-columns:1fr;}
+  .announce-photo{width:100%; height:100%; object-fit:cover; min-height:180px; background:var(--surface-raised);}
+  .announce-body-wrap{padding:24px;}
+  .announce-date{font-family:var(--mono); font-size:0.76rem; color:var(--orange); letter-spacing:0.05em;}
+  .announce-title{font-family:var(--display); font-weight:700; font-size:1.4rem; margin-top:6px; text-transform:uppercase;}
+  .announce-body{
+    color:var(--text-muted); font-size:0.92rem; white-space:pre-wrap; margin-top:12px; line-height:1.6;
+  }
+  .announce-link{
+    display:inline-block; margin-top:16px; font-family:var(--body); font-weight:600; font-size:0.88rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .announce-link:hover{background:var(--orange-glow);}
+
+  .empty-note{
+    font-size:0.88rem; color:var(--text-faint); padding:24px; text-align:center;
+  }
+  .fetch-note{
+    font-family:var(--mono); font-size:0.74rem; color:var(--text-faint);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; margin-bottom:16px; display:none;
+  }
+  .fetch-note.show{display:block;}
+
+  footer{
+    border-top:1px solid var(--line); padding:36px 0; margin-top:24px;
+  }
+  .footer-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center;}
+  .footer-brand{font-family:var(--display); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;}
+  .footer-note{color:var(--text-faint); font-size:0.82rem;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .stat-strip{flex-wrap:wrap;}
+    .stat{flex:1 1 45%; border-right:none; border-bottom:1px solid var(--line); padding-bottom:14px;}
+    .nav-links{gap:16px;}
+    .spotlight-card{grid-template-columns:auto 1fr; }
+    .spotlight-points{grid-column:1/-1; text-align:left; display:flex; align-items:baseline; gap:10px;}
+    .announce-card{grid-template-columns:1fr;}
+    .announce-photo{min-height:160px;}
+
+    .board-row{grid-template-columns:32px 34px 1fr; row-gap:6px;}
+    .board-row.weekly{grid-template-columns:32px 34px 1fr;}
+    .board-row.head{display:none;}
+    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss{
+      grid-column:3; font-size:0.8rem;
+    }
+    .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
+    .cell-points{grid-column:3; text-align:left; margin-top:4px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav wrap">
+    <a class="brand" href="index.html">
+      <div class="brand-mark-wrap" id="brand-logo-wrap">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="#ff6a2b" stroke-width="2"/>
+          <circle cx="20" cy="20" r="10" stroke="#ff6a2b" stroke-width="2" stroke-dasharray="3 4"/>
+          <circle cx="20" cy="20" r="3" fill="#ff6a2b"/>
+        </svg>
+      </div>
+      <div class="brand-text">BBX <span>ILOCOS</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="rankings.html" style="color:var(--text);">Rankings</a>
+      <a href="tournaments.html">Tournament History</a>
+      <a href="player.html">Player Stats</a>
+      <a href="information.html">Information</a>
+      <span class="week-pill" id="week-pill">WEEK —</span>
+    </div>
+  </nav>
+</header>
+
+<section class="hero" id="hero-section">
+  <div class="wrap">
+    <div class="eyebrow">BBX Ilocos · Rankings</div>
+    <h1 class="hero-title">Rankings</h1>
+    <p class="hero-sub">Every Swiss round, topcut, and championship of the BBX Ilocos scene — tracked bladers, live rankings, straight from the tournament sheet.</p>
+    <div class="stat-strip">
+      <div class="stat">
+        <div class="stat-num" id="stat-bladers">—</div>
+        <div class="stat-label">Bladers Tracked</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="stat-week">—</div>
+        <div class="stat-label">Current Week</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="stat-champion">—</div>
+        <div class="stat-label">Reigning Champion</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="spotlight">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">This Week</div>
+      <div class="section-title">Blader of the Week</div>
+    </div>
+    <div class="spotlight-card" id="spotlight-card">
+      <div class="empty-note">Loading spotlight…</div>
+    </div>
+  </div>
+</section>
+
+<section id="rankings">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Standings</div>
+      <div class="section-title">Rankings</div>
+    </div>
+    <div class="toggle-row">
+      <div class="segmented">
+        <button id="tab-weekly" class="active">This Week</button>
+        <button id="tab-alltime">All-Time</button>
+      </div>
+    </div>
+    <div class="fetch-note" id="leaderboard-note"></div>
+    <div class="board-container">
+      <div class="board-scroll" id="board-scroll">
+        <div class="empty-note">Loading rankings…</div>
+      </div>
+    </div>
+    <div class="board-more-wrap" id="board-more-wrap" style="display:none;">
+      <button class="board-more-btn" id="board-more-btn"></button>
+    </div>
+  </div>
+</section>
+
+<section id="juniors">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Rising Bladers</div>
+      <div class="section-title">Juniors' Corner</div>
+    </div>
+    <div class="toggle-row">
+      <div class="segmented">
+        <button id="tab-juniors-recent" class="active">Recent Tournament</button>
+        <button id="tab-juniors-alltime">All-Time Stats</button>
+      </div>
+    </div>
+    <div class="fetch-note" id="juniors-leaderboard-note"></div>
+    <div class="board-container">
+      <div class="board-scroll" id="juniors-board-scroll">
+        <div class="empty-note">Loading Juniors rankings…</div>
+      </div>
+    </div>
+    <div class="board-more-wrap" id="juniors-board-more-wrap" style="display:none;">
+      <button class="board-more-btn" id="juniors-board-more-btn"></button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">BBX ILOCOS</div>
+    <div class="footer-note">Data synced from Google Sheets · See the <a href="information.html" style="color:var(--orange);">Information</a> page for rules, community links &amp; announcements</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG — swap these for your own published CSV links anytime.
+   File > Share > Publish to web > pick the tab > CSV format.
+   ============================================================ */
+const SHEET_ID = "12bEFfajlVf02kYFzNO2HLgmjVR5F_iXCbozzcvDI3iE";
+const CONFIG = {
+  leaderboardCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1831933195`,
+  weeklyCSV:      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1818644128`,
+  announcementsCSV:`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1913609412`,
+  juniorsAllTimeCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=383979930`,
+  juniorsRecentCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=2135239967`,
+  // TODO: once the "Image Repository" tab is published, paste its gviz CSV link here:
+  // `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=<GID>`
+  imageRepoCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1694819038`
+};
+const LEADERBOARD_PAGE_SIZE = 20;
+
+/* ---------- sample fallback data (shown if a sheet can't be reached) ---------- */
+const SAMPLE_ALLTIME = [
+  {name:"L7keMeister", team:"8Nineties", photo:"", sw:5, sl:0, topcut:1, points:24},
+  {name:"Zepc", team:"Ilocos Elites", photo:"", sw:5, sl:0, topcut:0, points:23},
+  {name:"Knox", team:"8Nineties", photo:"", sw:4, sl:1, topcut:1, points:21},
+  {name:"Marker", team:"Ilocos Elites", photo:"", sw:5, sl:0, topcut:1, points:21},
+  {name:"Mitch", team:"Ilocos Elites", photo:"", sw:2, sl:3, topcut:1, points:21},
+  {name:"BLDS", team:"8Nineties", photo:"", sw:3, sl:2, topcut:1, points:20},
+  {name:"Xyjie", team:"8Nineties", photo:"", sw:3, sl:2, topcut:1, points:20},
+  {name:"Yazhiiee", team:"Ilocos Elites", photo:"", sw:4, sl:1, topcut:1, points:20},
+];
+const SAMPLE_WEEKLY = {
+  week:"Week 1",
+  rows:[
+    {name:"L7keMeister", team:"8Nineties", photo:"", sw:5, sl:0, topcut:"1", award:"Champion", swissking:"Yes", points:24},
+    {name:"Marker", team:"Ilocos Elites", photo:"", sw:5, sl:0, topcut:"1", award:"Finalist", swissking:"No", points:21},
+    {name:"Zepc", team:"Ilocos Elites", photo:"", sw:5, sl:0, topcut:"1", award:"3rd Place", swissking:"No", points:23},
+    {name:"Knox", team:"8Nineties", photo:"", sw:4, sl:1, topcut:"1", award:"Placer", swissking:"No", points:21},
+  ]
+};
+
+/* ---------- helpers ---------- */
+function norm(str){ return (str || "").toString().trim(); }
+function initials(name){
+  return norm(name).split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+}
+function avatarHTML(name, photo, size){
+  const cls = size === "board" ? "board" : "spotlight";
+  if(photo){
+    return `<img src="${photo}" class="${cls}-photo" alt="${name}"
+             onerror="this.outerHTML='<div class=&quot;${cls==='board'?'board-avatar':'avatar-fallback'}&quot;>${initials(name)}</div>'">`;
+  }
+  return `<div class="${cls==='board' ? 'board-avatar' : 'avatar-fallback'}">${initials(name)}</div>`;
+}
+function awardTagHTML(award){
+  const a = norm(award);
+  if(!a) return "";
+  const key = a.toLowerCase();
+  let cls = "tag-placer";
+  if(key === "champion") cls = "tag-champion";
+  else if(key === "finalist") cls = "tag-finalist";
+  else if(key === "3rd place") cls = "tag-3rd";
+  return `<span class="tag ${cls}">${a}</span>`;
+}
+function swissKingTagHTML(sk){
+  if(norm(sk).toLowerCase() !== "yes") return "";
+  return `<span class="tag tag-swiss-king">Swiss King</span>`;
+}
+/* Weekly ranking priority: Champion > Swiss King > Finalist > 3rd Place > Placer > everyone else (by points) */
+function weeklyRank(r){
+  const award = norm(r.award).toLowerCase();
+  const sk = norm(r.swissking).toLowerCase();
+  if(award === "champion") return 0;
+  if(sk === "yes") return 1;
+  if(award === "finalist") return 2;
+  if(award === "3rd place") return 3;
+  if(award === "placer") return 4;
+  return 5;
+}
+function fetchCSV(url){
+  return fetch(url).then(r=>{
+    if(!r.ok) throw new Error("Network response was not ok");
+    return r.text();
+  });
+}
+/* Builds a lookup so header text is matched regardless of stray spacing/casing
+   (e.g. "Swiss Wins", " swiss wins ", "SWISS WINS" all resolve the same). */
+function buildHeaderIndex(headerRow){
+  const idx = {};
+  (headerRow || []).forEach((h,i)=>{ idx[norm(h).toLowerCase()] = i; });
+  return idx;
+}
+function getField(row, idx, key){
+  const i = idx[key.toLowerCase()];
+  return i === undefined ? "" : row[i];
+}
+
+/* ---------- Image Repository ---------- */
+let images = {};
+function loadImageRepo(){
+  if(!CONFIG.imageRepoCSV) return Promise.resolve();
+  return fetchCSV(CONFIG.imageRepoCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    dataRows.forEach(r=>{
+      const key = norm(getField(r, idx, "Key"));
+      const url = norm(getField(r, idx, "Image URL"));
+      if(key && url) images[key] = url;
+    });
+  }).catch(err=>{
+    console.warn("Image repository fetch failed:", err);
+  });
+}
+/* Preloads an image before swapping it in, so a broken/missing link never shows a broken-image icon. */
+function preloadThenApply(url, applyFn){
+  if(!url) return;
+  const test = new Image();
+  test.onload = ()=> applyFn(url);
+  test.src = url;
+}
+function applyBrandLogo(){
+  preloadThenApply(images.site_logo, (url)=>{
+    document.querySelectorAll(".brand-mark-wrap").forEach(el=>{
+      el.innerHTML = `<img src="${url}" alt="BBX Ilocos" class="brand-mark-img">`;
+    });
+  });
+}
+function applyHeroBackground(selector, key){
+  preloadThenApply(images[key], (url)=>{
+    const el = document.querySelector(selector);
+    if(!el) return;
+    el.style.backgroundImage = `linear-gradient(180deg, rgba(10,10,11,0.55), rgba(10,10,11,0.93)), url('${url}')`;
+  });
+}
+
+/* ---------- state ---------- */
+let allTimeData = [];
+let weeklyData = { week:"", rows:[] };
+let currentTab = "weekly";
+let mainVisibleCount = LEADERBOARD_PAGE_SIZE;
+let juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
+let juniorsAllTimeData = [];
+let juniorsRecentData = { rows:[] };
+let currentJuniorsTab = "recent";
+let currentWeekLabel = "";
+
+/* ---------- load: all-time leaderboard ---------- */
+function loadAllTime(){
+  return fetchCSV(CONFIG.leaderboardCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    allTimeData = dataRows.map(r=>({
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
+      points: Number(getField(r, idx, "Total Points")) || 0
+    })).filter(r=>r.name);
+    allTimeData.sort((a,b)=>b.points - a.points);
+  }).catch(err=>{
+    console.warn("All-time leaderboard fetch failed, using sample data:", err);
+    allTimeData = SAMPLE_ALLTIME.slice().sort((a,b)=>b.points-a.points);
+    document.getElementById("leaderboard-note").textContent = "Showing sample data — connect your published sheet link to go live.";
+    document.getElementById("leaderboard-note").classList.add("show");
+  });
+}
+
+/* ---------- load: weekly leaderboard ---------- */
+function loadWeekly(){
+  return fetchCSV(CONFIG.weeklyCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+
+    const parsedRows = dataRows.map(r=>({
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: norm(getField(r, idx, "Topcut Attendance")),
+      award: norm(getField(r, idx, "Award")),
+      swissking: norm(getField(r, idx, "Swiss King")),
+      points: Number(getField(r, idx, "Points")) || 0
+    })).filter(r=>r.name);
+
+    parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
+    weeklyData = { week: currentWeekLabel || "—", rows: parsedRows };
+  }).catch(err=>{
+    console.warn("Weekly leaderboard fetch failed, using sample data:", err);
+    weeklyData = { week: SAMPLE_WEEKLY.week, rows: SAMPLE_WEEKLY.rows.slice().sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points) };
+    document.getElementById("leaderboard-note").textContent = "Showing sample data — connect your published sheet link to go live.";
+    document.getElementById("leaderboard-note").classList.add("show");
+  });
+}
+
+/* ---------- load: Juniors all-time stats ---------- */
+function loadJuniorsAllTime(){
+  if(!CONFIG.juniorsAllTimeCSV){
+    juniorsAllTimeData = [];
+    return Promise.resolve();
+  }
+  return fetchCSV(CONFIG.juniorsAllTimeCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    juniorsAllTimeData = dataRows.map(r=>({
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
+      points: Number(getField(r, idx, "Total Points")) || 0
+    })).filter(r=>r.name);
+    juniorsAllTimeData.sort((a,b)=> b.points - a.points);
+  }).catch(err=>{
+    console.warn("Juniors All-Time fetch failed:", err);
+    juniorsAllTimeData = [];
+    document.getElementById("juniors-leaderboard-note").textContent = "Couldn't load Juniors All-Time data — check the sheet link.";
+    document.getElementById("juniors-leaderboard-note").classList.add("show");
+  });
+}
+
+/* ---------- load: Juniors recent tournament ---------- */
+function loadJuniorsRecent(){
+  if(!CONFIG.juniorsRecentCSV){
+    juniorsRecentData = { rows:[] };
+    return Promise.resolve();
+  }
+  return fetchCSV(CONFIG.juniorsRecentCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    const parsedRows = dataRows.map(r=>({
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: norm(getField(r, idx, "Topcut Attendance")),
+      award: norm(getField(r, idx, "Award")),
+      swissking: norm(getField(r, idx, "Swiss King")),
+      points: Number(getField(r, idx, "Points")) || 0
+    })).filter(r=>r.name);
+    parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
+    juniorsRecentData = { rows: parsedRows };
+  }).catch(err=>{
+    console.warn("Juniors Recent Tournament fetch failed:", err);
+    juniorsRecentData = { rows:[] };
+    document.getElementById("juniors-leaderboard-note").textContent = "Couldn't load Juniors Recent Tournament data — check the sheet link.";
+    document.getElementById("juniors-leaderboard-note").classList.add("show");
+  });
+}
+
+/* ---------- load: current week label (from Announcements tab) ---------- */
+function loadAnnouncements(){
+  return fetchCSV(CONFIG.announcementsCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    let items = dataRows.map(r=>({
+      week: norm(getField(r, idx, "Week"))
+    }));
+    items.reverse();
+    currentWeekLabel = (items.find(a=>a.week) || {}).week || "";
+    weeklyData.week = currentWeekLabel || weeklyData.week;
+    renderHeroAndSpotlight();
+  }).catch(err=>{
+    console.warn("Announcements fetch failed (week label unavailable):", err);
+  });
+}
+
+/* ---------- render: hero stats + spotlight ---------- */
+function renderHeroAndSpotlight(){
+  document.getElementById("stat-bladers").textContent = allTimeData.length || "0";
+  document.getElementById("stat-week").textContent = weeklyData.week || "—";
+  document.getElementById("week-pill").textContent = (weeklyData.week || "WEEK —").toUpperCase();
+
+  const champ = weeklyData.rows.find(r=> norm(r.award).toLowerCase() === "champion") || weeklyData.rows[0];
+  document.getElementById("stat-champion").textContent = champ ? champ.name : "—";
+
+  const card = document.getElementById("spotlight-card");
+  if(!champ){
+    card.innerHTML = `<div class="empty-note">No results logged for this week yet.</div>`;
+    return;
+  }
+  card.innerHTML = `
+    <div class="spotlight-photo-wrap">${avatarHTML(champ.name, champ.photo, "spotlight")}</div>
+    <div>
+      <div class="spotlight-name"><a href="player.html?name=${encodeURIComponent(champ.name)}" style="color:inherit; text-decoration:none;" onmouseover="this.style.color='var(--orange)'" onmouseout="this.style.color='inherit'">${champ.name}</a></div>
+      <div class="spotlight-team">${champ.team}</div>
+      <div class="spotlight-tags">
+        ${awardTagHTML(champ.award || "Champion")}
+        ${swissKingTagHTML(champ.swissking)}
+        <span class="tag tag-placer">${champ.sw}W – ${champ.sl}L</span>
+      </div>
+    </div>
+    <div class="spotlight-points">
+      <div class="stat-num">${champ.points}</div>
+      <div class="stat-label">Points</div>
+    </div>
+  `;
+}
+
+/* ---------- render: leaderboard ---------- */
+function rankClass(i){
+  if(i===0) return "rank-ring r1";
+  if(i===1) return "rank-ring r2";
+  if(i===2) return "rank-ring r3";
+  return "rank-ring";
+}
+
+function renderBoard(containerId, mode, rows, emptyMsg){
+  const container = document.getElementById(containerId);
+  if(!rows.length){
+    container.innerHTML = `<div class="empty-note">${emptyMsg}</div>`;
+    return;
+  }
+  if(mode === "weekly"){
+    let html = `
+      <div class="board-row head weekly">
+        <div></div><div></div><div>Blader</div><div>Team</div><div>Swiss W-L</div><div>Award</div><div>Swiss King</div><div style="text-align:right">Points</div>
+      </div>`;
+    rows.forEach((r,i)=>{
+      html += `
+        <div class="board-row weekly">
+          <div class="${rankClass(i)}">${i+1}</div>
+          ${avatarHTML(r.name, r.photo, "board")}
+          <div class="blader-cell"><a class="blader-name" href="player.html?name=${encodeURIComponent(r.name)}">${r.name}</a></div>
+          <div class="cell-team"><span class="cell-label">Team</span>${r.team}</div>
+          <div class="cell-wl"><span class="cell-label">W-L</span><span class="w">${r.sw}W</span> – ${r.sl}L</div>
+          <div class="cell-award"><span class="cell-label">Award</span>${awardTagHTML(r.award) || '<span class="tag tag-placer">—</span>'}</div>
+          <div class="cell-swiss"><span class="cell-label">Swiss King</span>${swissKingTagHTML(r.swissking) || '—'}</div>
+          <div class="cell-points">${r.points}</div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  } else {
+    let html = `
+      <div class="board-row head">
+        <div></div><div></div><div>Blader</div><div>Team</div><div>Swiss W-L</div><div>Topcuts</div><div style="text-align:right">Points</div>
+      </div>`;
+    rows.forEach((r,i)=>{
+      html += `
+        <div class="board-row">
+          <div class="${rankClass(i)}">${i+1}</div>
+          ${avatarHTML(r.name, r.photo, "board")}
+          <div class="blader-cell"><a class="blader-name" href="player.html?name=${encodeURIComponent(r.name)}">${r.name}</a></div>
+          <div class="cell-team"><span class="cell-label">Team</span>${r.team}</div>
+          <div class="cell-wl"><span class="cell-label">W-L</span><span class="w">${r.sw}W</span> – ${r.sl}L</div>
+          <div class="cell-topcut"><span class="cell-label">Topcuts</span>${r.topcut}</div>
+          <div class="cell-points">${r.points}</div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+}
+
+function updateMoreButton(wrapId, btnId, total, visibleCount, expandFn, collapseFn){
+  const wrap = document.getElementById(wrapId);
+  const btn = document.getElementById(btnId);
+  if(total <= LEADERBOARD_PAGE_SIZE){
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "flex";
+  if(visibleCount >= total){
+    btn.textContent = "Show Top 20 Only";
+    btn.onclick = collapseFn;
+  } else {
+    btn.textContent = `See All (${total})`;
+    btn.onclick = expandFn;
+  }
+}
+
+function renderLeaderboard(){
+  const allRows = currentTab === "weekly" ? weeklyData.rows : allTimeData;
+  const emptyMsg = currentTab === "weekly" ? "No results logged for this week yet." : "No leaderboard data yet.";
+  renderBoard("board-scroll", currentTab, allRows.slice(0, mainVisibleCount), emptyMsg);
+  updateMoreButton("board-more-wrap", "board-more-btn", allRows.length, mainVisibleCount,
+    ()=>{ mainVisibleCount = allRows.length; renderLeaderboard(); },
+    ()=>{ mainVisibleCount = LEADERBOARD_PAGE_SIZE; renderLeaderboard(); document.getElementById("board-scroll").scrollIntoView({behavior:"smooth", block:"nearest"}); }
+  );
+}
+
+function renderJuniorsBoard(){
+  const allRows = currentJuniorsTab === "recent" ? juniorsRecentData.rows : juniorsAllTimeData;
+  const emptyMsg = currentJuniorsTab === "recent"
+    ? "No Juniors tournament results logged yet — publish the Juniors Recent Tournament tab and add its link to CONFIG."
+    : "No Juniors all-time stats yet — publish the Juniors All-Time tab and add its link to CONFIG.";
+  renderBoard("juniors-board-scroll", currentJuniorsTab === "recent" ? "weekly" : "alltime", allRows.slice(0, juniorsVisibleCount), emptyMsg);
+  updateMoreButton("juniors-board-more-wrap", "juniors-board-more-btn", allRows.length, juniorsVisibleCount,
+    ()=>{ juniorsVisibleCount = allRows.length; renderJuniorsBoard(); },
+    ()=>{ juniorsVisibleCount = LEADERBOARD_PAGE_SIZE; renderJuniorsBoard(); document.getElementById("juniors-board-scroll").scrollIntoView({behavior:"smooth", block:"nearest"}); }
+  );
+}
+
+/* ---------- tab switching ---------- */
+document.getElementById("tab-weekly").addEventListener("click", ()=>{
+  currentTab = "weekly";
+  mainVisibleCount = LEADERBOARD_PAGE_SIZE;
+  document.getElementById("tab-weekly").classList.add("active");
+  document.getElementById("tab-alltime").classList.remove("active");
+  renderLeaderboard();
+});
+document.getElementById("tab-alltime").addEventListener("click", ()=>{
+  currentTab = "alltime";
+  mainVisibleCount = LEADERBOARD_PAGE_SIZE;
+  document.getElementById("tab-alltime").classList.add("active");
+  document.getElementById("tab-weekly").classList.remove("active");
+  renderLeaderboard();
+});
+
+document.getElementById("tab-juniors-recent").addEventListener("click", ()=>{
+  currentJuniorsTab = "recent";
+  juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
+  document.getElementById("tab-juniors-recent").classList.add("active");
+  document.getElementById("tab-juniors-alltime").classList.remove("active");
+  renderJuniorsBoard();
+});
+document.getElementById("tab-juniors-alltime").addEventListener("click", ()=>{
+  currentJuniorsTab = "alltime";
+  juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
+  document.getElementById("tab-juniors-alltime").classList.add("active");
+  document.getElementById("tab-juniors-recent").classList.remove("active");
+  renderJuniorsBoard();
+});
+
+/* ---------- init ---------- */
+Promise.all([loadAllTime(), loadWeekly(), loadAnnouncements(), loadJuniorsAllTime(), loadJuniorsRecent(), loadImageRepo()]).then(()=>{
+  renderHeroAndSpotlight();
+  renderLeaderboard();
+  renderJuniorsBoard();
+  applyBrandLogo();
+  applyHeroBackground("#hero-section", "hero_bg_rankings");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player Stats — BBX Ilocos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #19191b;
+    --surface: #232326;
+    --surface-raised: #2c2c30;
+    --line: #38383c;
+    --orange: #ff6a2b;
+    --orange-dim: #6b3a22;
+    --orange-glow: rgba(255,106,43,0.18);
+    --text: #f1efe9;
+    --text-muted: #9a9994;
+    --text-faint: #6c6b68;
+    --grey-ring: #55555a;
+    --radius: 14px;
+    --display: 'Saira Condensed', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- background texture ---------- */
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(255,106,43,0.06), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(255,106,43,0.04), transparent 45%);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(25,25,27,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; flex-wrap:wrap; row-gap:10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand-mark-wrap{width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-mark{width:30px; height:30px; flex-shrink:0;}
+  .brand-mark-img{width:100%; height:100%; object-fit:contain; border-radius:6px;}
+  .brand-text{font-family:var(--display); font-weight:700; font-size:1.3rem; letter-spacing:0.02em;}
+  .brand-text span{color:var(--orange);}
+  .nav-links{display:flex; align-items:center; gap:28px;}
+  .nav-links a{
+    font-size:0.92rem; color:var(--text-muted); text-decoration:none;
+    font-weight:500; transition:color 0.2s;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .week-pill{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.06em;
+    color:var(--orange); border:1px solid var(--orange-dim);
+    background:var(--orange-glow); padding:5px 11px; border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:72px 0 56px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-grid{
+    display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.14em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:16px; height:1px; background:var(--orange);}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .hero-sub{
+    color:var(--text-muted); font-size:1.05rem; max-width:480px; margin-top:18px;
+  }
+  .stat-strip{
+    display:flex; gap:0; margin-top:36px; border-top:1px solid var(--line);
+  }
+  .stat{
+    flex:1; padding:18px 20px 0; border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-num{font-family:var(--mono); font-weight:600; font-size:1.6rem; color:var(--orange);}
+  .stat-label{font-size:0.76rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.07em; margin-top:2px;}
+
+  .spin-graphic{display:flex; justify-content:center; align-items:center;}
+  .spin-graphic svg{width:100%; max-width:280px; height:auto;}
+  .ring-outer{
+    transform-origin:150px 150px;
+    animation:spin 14s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .ring-outer{ animation:none; } }
+
+  /* ---------- section shell ---------- */
+  section{padding:64px 0;}
+  .section-head{margin-bottom:32px;}
+  .section-eyebrow{
+    font-family:var(--mono); font-size:0.76rem; letter-spacing:0.12em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:8px;
+  }
+  .section-title{
+    font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase;
+  }
+  .section-note{color:var(--text-muted); font-size:0.92rem; margin-top:6px;}
+
+  /* ---------- spotlight ---------- */
+  .spotlight-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;
+  }
+  .spotlight-photo-wrap{position:relative; width:96px; height:96px; flex-shrink:0;}
+  .spotlight-photo, .avatar-fallback{
+    width:96px; height:96px; border-radius:50%; object-fit:cover;
+    border:2px solid var(--orange);
+  }
+  .avatar-fallback{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); font-size:2.2rem; color:var(--orange);
+  }
+  .spotlight-name{font-family:var(--display); font-weight:700; font-size:1.7rem; text-transform:uppercase;}
+  .spotlight-team{color:var(--text-muted); font-size:0.92rem; margin-top:2px;}
+  .spotlight-tags{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .spotlight-points{text-align:right;}
+  .spotlight-points .stat-num{font-size:2.4rem;}
+  .spotlight-points .stat-label{text-align:right;}
+
+  .tag{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.04em;
+    padding:4px 10px; border-radius:100px; text-transform:uppercase;
+  }
+  .tag-champion{background:var(--orange); color:#19191b; font-weight:600;}
+  .tag-finalist{border:1px solid var(--orange); color:var(--orange);}
+  .tag-3rd, .tag-placer{border:1px solid var(--grey-ring); color:var(--text-muted);}
+  .tag-swiss-king{border:1px solid var(--text-faint); color:var(--text-muted); background:var(--surface-raised);}
+
+  /* ---------- leaderboard ---------- */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px;}
+  .segmented{
+    display:inline-flex; background:var(--surface); border:1px solid var(--line);
+    border-radius:100px; padding:4px;
+  }
+  .segmented button{
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    padding:9px 20px; border-radius:100px; transition:all 0.2s;
+  }
+  .segmented button.active{background:var(--orange); color:#19191b;}
+
+  .board-row{
+    display:grid; grid-template-columns:44px 40px 1.6fr 1fr 0.8fr 1fr 0.7fr;
+    gap:14px; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line);
+  }
+  .board-row.head{
+    font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-faint); border-bottom:1px solid var(--line);
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
+
+  .rank-ring{
+    position:relative; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:0.95rem;
+    border:2px solid var(--grey-ring); color:var(--text-muted);
+  }
+  .rank-ring.r1{border-color:var(--orange); color:var(--orange); box-shadow:0 0 0 3px var(--orange-glow);}
+  .rank-ring.r2{border-color:#c9793f; color:#e0a679;}
+  .rank-ring.r3{border-color:#8a5a3a; color:#b4886a;}
+
+  .board-photo, .board-avatar{width:36px; height:36px; border-radius:50%; object-fit:cover;}
+  .board-avatar{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); color:var(--orange); font-size:1rem;
+  }
+  .blader-cell{display:flex; align-items:center; gap:10px; min-width:0;}
+  .blader-name{font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cell-label{display:none;}
+  .cell-team{color:var(--text-muted); font-size:0.88rem;}
+  .cell-wl{font-family:var(--mono); font-size:0.88rem;}
+  .cell-wl .w{color:var(--orange);}
+  .cell-topcut{font-family:var(--mono); font-size:0.88rem; color:var(--text-muted);}
+  .cell-points{font-family:var(--mono); font-weight:600; font-size:1.05rem; text-align:right; color:var(--text);}
+  .board-container{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .board-scroll{overflow-x:auto;}
+
+  /* ---------- announcements ---------- */
+  .announce-grid{display:flex; flex-direction:column; gap:20px;}
+  .announce-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:grid; grid-template-columns:220px 1fr;
+  }
+  .announce-card.no-photo{grid-template-columns:1fr;}
+  .announce-photo{width:100%; height:100%; object-fit:cover; min-height:180px; background:var(--surface-raised);}
+  .announce-body-wrap{padding:24px;}
+  .announce-date{font-family:var(--mono); font-size:0.76rem; color:var(--orange); letter-spacing:0.05em;}
+  .announce-title{font-family:var(--display); font-weight:700; font-size:1.4rem; margin-top:6px; text-transform:uppercase;}
+  .announce-body{
+    color:var(--text-muted); font-size:0.92rem; white-space:pre-wrap; margin-top:12px; line-height:1.6;
+  }
+  .announce-link{
+    display:inline-block; margin-top:16px; font-family:var(--body); font-weight:600; font-size:0.88rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .announce-link:hover{background:var(--orange-glow);}
+
+  .empty-note{
+    font-size:0.88rem; color:var(--text-faint); padding:24px; text-align:center;
+  }
+  .fetch-note{
+    font-family:var(--mono); font-size:0.74rem; color:var(--text-faint);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; margin-bottom:16px; display:none;
+  }
+  .fetch-note.show{display:block;}
+
+  footer{
+    border-top:1px solid var(--line); padding:36px 0; margin-top:24px;
+  }
+  .footer-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center;}
+  .footer-brand{font-family:var(--display); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;}
+  .footer-note{color:var(--text-faint); font-size:0.82rem;}
+
+  /* ---------- page hero (non-home pages) ---------- */
+  .page-hero{padding:72px 0 56px; border-bottom:1px solid var(--line); background-size:cover; background-position:center; transition:background-image 0.3s;}
+  .page-hero h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .page-hero p{color:var(--text-muted); font-size:1rem; max-width:520px; margin-top:14px;}
+
+  /* ---------- cards / link cards ---------- */
+  .card-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:20px;}
+  .card-grid.teams{grid-template-columns:repeat(2, 1fr);}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px; display:flex; flex-direction:column;
+  }
+  .card-icon{
+    width:40px; height:40px; border-radius:10px; background:var(--orange-glow);
+    border:1px solid var(--orange-dim); display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px; flex-shrink:0;
+  }
+  .card-icon svg{width:20px; height:20px;}
+  .card-title{font-family:var(--display); font-weight:700; font-size:1.25rem; text-transform:uppercase; letter-spacing:0.01em;}
+  .card-desc{color:var(--text-muted); font-size:0.9rem; margin-top:8px; line-height:1.55; flex-grow:1;}
+  .card-link{
+    display:inline-flex; align-items:center; gap:6px; margin-top:18px; align-self:flex-start;
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .card-link:hover{background:var(--orange-glow);}
+  .card-note{
+    font-family:var(--mono); font-size:0.72rem; color:var(--text-faint); margin-top:12px; letter-spacing:0.02em;
+  }
+  .team-card{padding:20px 22px; flex-direction:row; align-items:center; justify-content:space-between; gap:16px;}
+  .team-name{font-family:var(--display); font-weight:600; font-size:1.1rem; text-transform:uppercase;}
+  .team-card .card-link{margin-top:0;}
+
+  /* ---------- player search ---------- */
+  .search-wrap{position:relative; max-width:480px;}
+  .search-input{
+    width:100%; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:15px 18px; font-family:var(--body); font-size:1rem; color:var(--text);
+    outline:none; transition:border-color 0.2s;
+  }
+  .search-input::placeholder{color:var(--text-faint);}
+  .search-input:focus{border-color:var(--orange-dim);}
+  .suggestions{
+    position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:20;
+    background:var(--surface-raised); border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; box-shadow:0 12px 28px rgba(0,0,0,0.35); display:none;
+  }
+  .suggestions.show{display:block;}
+  .suggestion-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 16px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--line);
+  }
+  .suggestion-item:last-child{border-bottom:none;}
+  .suggestion-item:hover, .suggestion-item.hl{background:var(--orange-glow);}
+  .suggestion-name{font-weight:600; font-size:0.92rem;}
+  .suggestion-team{font-size:0.78rem; color:var(--text-faint);}
+  .suggestion-division{
+    font-family:var(--mono); font-size:0.66rem; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text-faint); border:1px solid var(--line); border-radius:100px; padding:2px 8px; flex-shrink:0;
+  }
+
+  /* ---------- player profile ---------- */
+  .profile-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:32px; display:flex; gap:26px; align-items:center; flex-wrap:wrap;
+  }
+  .profile-photo, .profile-photo-fallback{
+    width:104px; height:104px; border-radius:50%; object-fit:cover; border:2px solid var(--orange); flex-shrink:0;
+  }
+  .profile-photo-fallback{
+    display:flex; align-items:center; justify-content:center; background:var(--surface-raised);
+    font-family:var(--display); font-size:2.4rem; color:var(--orange);
+  }
+  .profile-name{font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase; line-height:1;}
+  .profile-team{color:var(--text-muted); font-size:0.95rem; margin-top:4px;}
+  .profile-division{
+    display:inline-block; margin-top:10px; font-family:var(--mono); font-size:0.72rem; letter-spacing:0.05em;
+    text-transform:uppercase; color:var(--text-muted); border:1px solid var(--line); border-radius:100px; padding:3px 11px;
+  }
+  .profile-points{margin-left:auto; text-align:right;}
+  .profile-points .stat-num{font-size:2.6rem;}
+
+  .stat-tile-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:28px;}
+  .stat-tile{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:20px; text-align:center;
+  }
+  .stat-tile .stat-num{font-size:1.7rem; display:block;}
+  .stat-tile .stat-label{margin-top:4px;}
+
+  .achievement-grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:14px; margin-top:14px;}
+  .achievement-tile{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:18px 10px; text-align:center;
+  }
+  .achievement-tile .stat-num{font-size:1.5rem; display:block; color:var(--orange);}
+  .achievement-tile .stat-label{margin-top:4px; font-size:0.68rem;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .card-grid{grid-template-columns:1fr;}
+    .team-card{flex-direction:column; align-items:flex-start;}
+    .hero-grid{grid-template-columns:1fr;}
+    .profile-points{margin-left:0; text-align:left;}
+    .stat-tile-grid{grid-template-columns:repeat(2, 1fr);}
+    .achievement-grid{grid-template-columns:repeat(2, 1fr);}
+    .spin-graphic{order:-1; max-width:180px; margin:0 auto;}
+    .stat-strip{flex-wrap:wrap;}
+    .stat{flex:1 1 45%; border-right:none; border-bottom:1px solid var(--line); padding-bottom:14px;}
+    .nav-links{gap:16px;}
+    .spotlight-card{grid-template-columns:auto 1fr; }
+    .spotlight-points{grid-column:1/-1; text-align:left; display:flex; align-items:baseline; gap:10px;}
+    .announce-card{grid-template-columns:1fr;}
+    .announce-photo{min-height:160px;}
+
+    .board-row{grid-template-columns:32px 34px 1fr; row-gap:6px;}
+    .board-row.weekly{grid-template-columns:32px 34px 1fr;}
+    .board-row.head{display:none;}
+    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss{
+      grid-column:3; font-size:0.8rem;
+    }
+    .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
+    .cell-points{grid-column:3; text-align:left; margin-top:4px;}
+  }
+</style><body>
+
+<header>
+  <nav class="nav wrap">
+    <a class="brand" href="index.html">
+      <div class="brand-mark-wrap" id="brand-logo-wrap">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="#ff6a2b" stroke-width="2"/>
+          <circle cx="20" cy="20" r="10" stroke="#ff6a2b" stroke-width="2" stroke-dasharray="3 4"/>
+          <circle cx="20" cy="20" r="3" fill="#ff6a2b"/>
+        </svg>
+      </div>
+      <div class="brand-text">BBX <span>ILOCOS</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="rankings.html">Rankings</a>
+      <a href="tournaments.html">Tournament History</a>
+      <a href="player.html" style="color:var(--text);">Player Stats</a>
+      <a href="information.html">Information</a>
+      <span class="week-pill" id="week-pill">WEEK —</span>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero" id="player-hero">
+  <div class="wrap">
+    <div class="eyebrow">BBX Ilocos · Bladers</div>
+    <h1>Player Stats.</h1>
+    <p>Look up any blader in the system — Open or Juniors.</p>
+    <div class="search-wrap" style="margin-top:24px;">
+      <input type="text" class="search-input" id="player-search" placeholder="Search for a blader by name…" autocomplete="off">
+      <div class="suggestions" id="player-suggestions"></div>
+    </div>
+  </div>
+</section>
+
+<section id="player-profile">
+  <div class="wrap" id="profile-wrap">
+    <div class="empty-note">Loading roster…</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">BBX ILOCOS</div>
+    <div class="footer-note">Data synced from Google Sheets · See the <a href="information.html" style="color:var(--orange);">Information</a> page for rules, community links &amp; announcements</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SHEET_ID = "12bEFfajlVf02kYFzNO2HLgmjVR5F_iXCbozzcvDI3iE";
+const CONFIG = {
+  leaderboardCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1831933195`,
+  juniorsAllTimeCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=383979930`,
+  announcementsCSV:`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1913609412`,
+  // TODO: once the "Image Repository" tab is published, paste its gviz CSV link here:
+  imageRepoCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1694819038`
+};
+
+/* ---------- helpers ---------- */
+function norm(str){ return (str || "").toString().trim(); }
+function initials(name){
+  return norm(name).split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+}
+function fetchCSV(url){
+  return fetch(url).then(r=>{
+    if(!r.ok) throw new Error("Network response was not ok");
+    return r.text();
+  });
+}
+function buildHeaderIndex(headerRow){
+  const idx = {};
+  (headerRow || []).forEach((h,i)=>{ idx[norm(h).toLowerCase()] = i; });
+  return idx;
+}
+function getField(row, idx, key){
+  const i = idx[key.toLowerCase()];
+  return i === undefined ? "" : row[i];
+}
+
+/* ---------- Image Repository ---------- */
+let images = {};
+function loadImageRepo(){
+  if(!CONFIG.imageRepoCSV) return Promise.resolve();
+  return fetchCSV(CONFIG.imageRepoCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    dataRows.forEach(r=>{
+      const key = norm(getField(r, idx, "Key"));
+      const url = norm(getField(r, idx, "Image URL"));
+      if(key && url) images[key] = url;
+    });
+  }).catch(err=>{
+    console.warn("Image repository fetch failed:", err);
+  });
+}
+function preloadThenApply(url, applyFn){
+  if(!url) return;
+  const test = new Image();
+  test.onload = ()=> applyFn(url);
+  test.src = url;
+}
+function applyBrandLogo(){
+  preloadThenApply(images.site_logo, (url)=>{
+    document.querySelectorAll(".brand-mark-wrap").forEach(el=>{
+      el.innerHTML = `<img src="${url}" alt="BBX Ilocos" class="brand-mark-img">`;
+    });
+  });
+}
+function applyHeroBackground(selector, key){
+  preloadThenApply(images[key], (url)=>{
+    const el = document.querySelector(selector);
+    if(!el) return;
+    el.style.backgroundImage = `linear-gradient(180deg, rgba(10,10,11,0.55), rgba(10,10,11,0.93)), url('${url}')`;
+  });
+}
+
+let roster = []; // combined Open + Juniors, each tagged with .division
+
+/* ---------- load: Open roster (with achievements) ---------- */
+function loadOpenRoster(){
+  return fetchCSV(CONFIG.leaderboardCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    const players = dataRows.map(r=>({
+      division: "Open",
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
+      championships: Number(getField(r, idx, "Championships")) || 0,
+      finalists: Number(getField(r, idx, "Finalists")) || 0,
+      thirds: Number(getField(r, idx, "3rd Places")) || 0,
+      placers: Number(getField(r, idx, "Placers")) || 0,
+      swissKings: Number(getField(r, idx, "Swiss Kings")) || 0,
+      points: Number(getField(r, idx, "Total Points")) || 0
+    })).filter(p=>p.name);
+    roster = roster.concat(players);
+  }).catch(err=>{
+    console.warn("Open roster fetch failed:", err);
+  });
+}
+
+/* ---------- load: Juniors roster (basic stats only) ---------- */
+function loadJuniorsRoster(){
+  return fetchCSV(CONFIG.juniorsAllTimeCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    const players = dataRows.map(r=>({
+      division: "Juniors",
+      name: norm(getField(r, idx, "Name")),
+      team: norm(getField(r, idx, "Team")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      sw: Number(getField(r, idx, "Swiss Wins")) || 0,
+      sl: Number(getField(r, idx, "Swiss Losses")) || 0,
+      topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
+      points: Number(getField(r, idx, "Total Points")) || 0
+    })).filter(p=>p.name);
+    roster = roster.concat(players);
+  }).catch(err=>{
+    console.warn("Juniors roster fetch failed:", err);
+  });
+}
+
+/* ---------- load: current week label (for the nav pill) ---------- */
+function loadWeekLabel(){
+  return fetchCSV(CONFIG.announcementsCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1).reverse();
+    const weekRow = dataRows.find(r=> norm(getField(r, idx, "Week")));
+    const week = weekRow ? norm(getField(weekRow, idx, "Week")) : "";
+    document.getElementById("week-pill").textContent = (week || "WEEK —").toUpperCase();
+  }).catch(()=>{});
+}
+
+/* ---------- avatar ---------- */
+function profileAvatarHTML(p){
+  if(p.photo){
+    return `<img src="${p.photo}" class="profile-photo" alt="${p.name}"
+             onerror="this.outerHTML='<div class=&quot;profile-photo-fallback&quot;>${initials(p.name)}</div>'">`;
+  }
+  return `<div class="profile-photo-fallback">${initials(p.name)}</div>`;
+}
+
+/* ---------- render: player profile ---------- */
+function renderProfile(p){
+  const wrap = document.getElementById("profile-wrap");
+  if(!p){
+    wrap.innerHTML = `<div class="empty-note">No blader found by that name. Try the search bar above.</div>`;
+    return;
+  }
+  const winPct = (p.sw + p.sl) > 0 ? Math.round((p.sw / (p.sw + p.sl)) * 100) : 0;
+
+  let achievementsHTML = "";
+  if(p.division === "Open"){
+    achievementsHTML = `
+      <div class="section-head" style="margin-top:36px; margin-bottom:0;">
+        <div class="section-eyebrow">Career</div>
+        <div class="section-title" style="font-size:1.4rem;">Achievements</div>
+      </div>
+      <div class="achievement-grid">
+        <div class="achievement-tile"><span class="stat-num">${p.championships}</span><span class="stat-label">Championships</span></div>
+        <div class="achievement-tile"><span class="stat-num">${p.finalists}</span><span class="stat-label">Finalists</span></div>
+        <div class="achievement-tile"><span class="stat-num">${p.thirds}</span><span class="stat-label">3rd Places</span></div>
+        <div class="achievement-tile"><span class="stat-num">${p.placers}</span><span class="stat-label">Placers</span></div>
+        <div class="achievement-tile"><span class="stat-num">${p.swissKings}</span><span class="stat-label">Swiss Kings</span></div>
+      </div>`;
+  } else {
+    achievementsHTML = `<div class="section-note" style="margin-top:24px;">Achievement tracking for Juniors is coming soon — for now this shows W-L record and points.</div>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="profile-card">
+      ${profileAvatarHTML(p)}
+      <div>
+        <div class="profile-name">${p.name}</div>
+        <div class="profile-team">${p.team || "—"}</div>
+        <div class="profile-division">${p.division} Division</div>
+      </div>
+      <div class="profile-points">
+        <div class="stat-num">${p.points}</div>
+        <div class="stat-label">Total Points</div>
+      </div>
+    </div>
+    <div class="stat-tile-grid">
+      <div class="stat-tile"><span class="stat-num">${winPct}%</span><span class="stat-label">Win Rate</span></div>
+      <div class="stat-tile"><span class="stat-num">${p.sw}W – ${p.sl}L</span><span class="stat-label">Swiss Record</span></div>
+      <div class="stat-tile"><span class="stat-num">${p.topcut}</span><span class="stat-label">Topcut Attendance</span></div>
+    </div>
+    ${achievementsHTML}
+  `;
+  // keep the URL shareable
+  const url = new URL(window.location);
+  url.searchParams.set("name", p.name);
+  window.history.replaceState({}, "", url);
+}
+
+/* ---------- search ---------- */
+function findPlayer(name){
+  const target = norm(name).toLowerCase();
+  return roster.find(p=> p.name.toLowerCase() === target)
+    || roster.find(p=> p.name.toLowerCase().includes(target));
+}
+function showSuggestions(query){
+  const box = document.getElementById("player-suggestions");
+  const q = norm(query).toLowerCase();
+  if(!q){ box.classList.remove("show"); box.innerHTML=""; return; }
+  const matches = roster.filter(p=> p.name.toLowerCase().includes(q)).slice(0, 8);
+  if(!matches.length){ box.classList.remove("show"); box.innerHTML=""; return; }
+  box.innerHTML = matches.map(p=>`
+    <div class="suggestion-item" data-name="${p.name.replace(/"/g,'&quot;')}">
+      <div>
+        <div class="suggestion-name">${p.name}</div>
+        <div class="suggestion-team">${p.team || ""}</div>
+      </div>
+      <span class="suggestion-division">${p.division}</span>
+    </div>
+  `).join("");
+  box.classList.add("show");
+  box.querySelectorAll(".suggestion-item").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const p = findPlayer(el.dataset.name);
+      document.getElementById("player-search").value = p ? p.name : el.dataset.name;
+      box.classList.remove("show");
+      renderProfile(p);
+    });
+  });
+}
+
+const searchInput = document.getElementById("player-search");
+searchInput.addEventListener("input", (e)=> showSuggestions(e.target.value));
+searchInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    const p = findPlayer(searchInput.value);
+    document.getElementById("player-suggestions").classList.remove("show");
+    renderProfile(p);
+  }
+});
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest(".search-wrap")){
+    document.getElementById("player-suggestions").classList.remove("show");
+  }
+});
+
+/* ---------- init ---------- */
+Promise.all([loadOpenRoster(), loadJuniorsRoster(), loadWeekLabel(), loadImageRepo()]).then(()=>{
+  applyBrandLogo();
+  applyHeroBackground("#player-hero", "hero_bg_player_stats");
+  const params = new URLSearchParams(window.location.search);
+  const nameParam = params.get("name");
+  if(nameParam){
+    searchInput.value = nameParam;
+    renderProfile(findPlayer(nameParam));
+  } else if(roster.length){
+    renderProfile(roster.slice().sort((a,b)=>b.points-a.points)[0]);
+  } else {
+    document.getElementById("profile-wrap").innerHTML = `<div class="empty-note">No roster data available yet.</div>`;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBX Ilocos — Tournament Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #19191b;
+    --surface: #232326;
+    --surface-raised: #2c2c30;
+    --line: #38383c;
+    --orange: #ff6a2b;
+    --orange-dim: #6b3a22;
+    --orange-glow: rgba(255,106,43,0.18);
+    --text: #f1efe9;
+    --text-muted: #9a9994;
+    --text-faint: #6c6b68;
+    --grey-ring: #55555a;
+    --radius: 14px;
+    --display: 'Saira Condensed', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- background texture ---------- */
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(255,106,43,0.06), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(255,106,43,0.04), transparent 45%);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(25,25,27,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; flex-wrap:wrap; row-gap:10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand-mark-wrap{width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-mark{width:30px; height:30px; flex-shrink:0;}
+  .brand-mark-img{width:100%; height:100%; object-fit:contain; border-radius:6px;}
+  .brand-text{font-family:var(--display); font-weight:700; font-size:1.3rem; letter-spacing:0.02em;}
+  .brand-text span{color:var(--orange);}
+  .nav-links{display:flex; align-items:center; gap:28px;}
+  .nav-links a{
+    font-size:0.92rem; color:var(--text-muted); text-decoration:none;
+    font-weight:500; transition:color 0.2s;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .week-pill{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.06em;
+    color:var(--orange); border:1px solid var(--orange-dim);
+    background:var(--orange-glow); padding:5px 11px; border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:72px 0 56px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-grid{
+    display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.14em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:16px; height:1px; background:var(--orange);}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .hero-sub{
+    color:var(--text-muted); font-size:1.05rem; max-width:480px; margin-top:18px;
+  }
+  .stat-strip{
+    display:flex; gap:0; margin-top:36px; border-top:1px solid var(--line);
+  }
+  .stat{
+    flex:1; padding:18px 20px 0; border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-num{font-family:var(--mono); font-weight:600; font-size:1.6rem; color:var(--orange);}
+  .stat-label{font-size:0.76rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.07em; margin-top:2px;}
+
+  .spin-graphic{display:flex; justify-content:center; align-items:center;}
+  .spin-graphic svg{width:100%; max-width:280px; height:auto;}
+  .ring-outer{
+    transform-origin:150px 150px;
+    animation:spin 14s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .ring-outer{ animation:none; } }
+
+  /* ---------- section shell ---------- */
+  section{padding:64px 0;}
+  .section-head{margin-bottom:32px;}
+  .section-eyebrow{
+    font-family:var(--mono); font-size:0.76rem; letter-spacing:0.12em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:8px;
+  }
+  .section-title{
+    font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase;
+  }
+  .section-note{color:var(--text-muted); font-size:0.92rem; margin-top:6px;}
+
+  /* ---------- spotlight ---------- */
+  .spotlight-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;
+  }
+  .spotlight-photo-wrap{position:relative; width:96px; height:96px; flex-shrink:0;}
+  .spotlight-photo, .avatar-fallback{
+    width:96px; height:96px; border-radius:50%; object-fit:cover;
+    border:2px solid var(--orange);
+  }
+  .avatar-fallback{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); font-size:2.2rem; color:var(--orange);
+  }
+  .spotlight-name{font-family:var(--display); font-weight:700; font-size:1.7rem; text-transform:uppercase;}
+  .spotlight-team{color:var(--text-muted); font-size:0.92rem; margin-top:2px;}
+  .spotlight-tags{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .spotlight-points{text-align:right;}
+  .spotlight-points .stat-num{font-size:2.4rem;}
+  .spotlight-points .stat-label{text-align:right;}
+
+  .tag{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.04em;
+    padding:4px 10px; border-radius:100px; text-transform:uppercase;
+  }
+  .tag-champion{background:var(--orange); color:#19191b; font-weight:600;}
+  .tag-finalist{border:1px solid var(--orange); color:var(--orange);}
+  .tag-3rd, .tag-placer{border:1px solid var(--grey-ring); color:var(--text-muted);}
+  .tag-swiss-king{border:1px solid var(--text-faint); color:var(--text-muted); background:var(--surface-raised);}
+
+  /* ---------- leaderboard ---------- */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px;}
+  .segmented{
+    display:inline-flex; background:var(--surface); border:1px solid var(--line);
+    border-radius:100px; padding:4px;
+  }
+  .segmented button{
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    padding:9px 20px; border-radius:100px; transition:all 0.2s;
+  }
+  .segmented button.active{background:var(--orange); color:#19191b;}
+
+  .board-row{
+    display:grid; grid-template-columns:44px 40px 1.6fr 1fr 0.8fr 1fr 0.7fr;
+    gap:14px; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line);
+  }
+  .board-row.head{
+    font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-faint); border-bottom:1px solid var(--line);
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
+
+  .rank-ring{
+    position:relative; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:0.95rem;
+    border:2px solid var(--grey-ring); color:var(--text-muted);
+  }
+  .rank-ring.r1{border-color:var(--orange); color:var(--orange); box-shadow:0 0 0 3px var(--orange-glow);}
+  .rank-ring.r2{border-color:#c9793f; color:#e0a679;}
+  .rank-ring.r3{border-color:#8a5a3a; color:#b4886a;}
+
+  .board-photo, .board-avatar{width:36px; height:36px; border-radius:50%; object-fit:cover;}
+  .board-avatar{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); color:var(--orange); font-size:1rem;
+  }
+  .blader-cell{display:flex; align-items:center; gap:10px; min-width:0;}
+  .blader-name{font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cell-label{display:none;}
+  .cell-team{color:var(--text-muted); font-size:0.88rem;}
+  .cell-wl{font-family:var(--mono); font-size:0.88rem;}
+  .cell-wl .w{color:var(--orange);}
+  .cell-topcut{font-family:var(--mono); font-size:0.88rem; color:var(--text-muted);}
+  .cell-points{font-family:var(--mono); font-weight:600; font-size:1.05rem; text-align:right; color:var(--text);}
+  .board-container{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .board-scroll{overflow-x:auto;}
+
+  /* ---------- announcements ---------- */
+  .announce-grid{display:flex; flex-direction:column; gap:20px;}
+  .announce-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:grid; grid-template-columns:1fr 1fr;
+  }
+  .announce-card.no-photo{grid-template-columns:1fr;}
+  .announce-photo{width:100%; height:100%; object-fit:cover; min-height:260px; background:var(--surface-raised);}
+  .announce-body-wrap{padding:24px;}
+  .announce-date{font-family:var(--mono); font-size:0.76rem; color:var(--orange); letter-spacing:0.05em;}
+  .announce-title{font-family:var(--display); font-weight:700; font-size:1.4rem; margin-top:6px; text-transform:uppercase;}
+  .announce-body{
+    color:var(--text-muted); font-size:0.92rem; white-space:pre-wrap; margin-top:12px; line-height:1.6;
+  }
+  .announce-link{
+    display:inline-block; margin-top:16px; font-family:var(--body); font-weight:600; font-size:0.88rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .announce-link:hover{background:var(--orange-glow);}
+
+  .empty-note{
+    font-size:0.88rem; color:var(--text-faint); padding:24px; text-align:center;
+  }
+  .fetch-note{
+    font-family:var(--mono); font-size:0.74rem; color:var(--text-faint);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; margin-bottom:16px; display:none;
+  }
+  .fetch-note.show{display:block;}
+
+  footer{
+    border-top:1px solid var(--line); padding:36px 0; margin-top:24px;
+  }
+  .footer-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center;}
+  .footer-brand{font-family:var(--display); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;}
+  .footer-note{color:var(--text-faint); font-size:0.82rem;}
+
+  /* ---------- page hero (non-home pages) ---------- */
+  .page-hero{padding:72px 0 56px; border-bottom:1px solid var(--line); background-size:cover; background-position:center; transition:background-image 0.3s;}
+  .page-hero h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .page-hero p{color:var(--text-muted); font-size:1rem; max-width:520px; margin-top:14px;}
+  #landing-hero p{max-width:640px; line-height:1.6;}
+
+  /* ---------- cards / link cards ---------- */
+  .card-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:20px;}
+  .card-grid.teams{grid-template-columns:repeat(2, 1fr);}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px; display:flex; flex-direction:column;
+  }
+  .card-icon{
+    width:40px; height:40px; border-radius:10px; background:var(--orange-glow);
+    border:1px solid var(--orange-dim); display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px; flex-shrink:0;
+  }
+  .card-icon svg{width:20px; height:20px;}
+  .card-title{font-family:var(--display); font-weight:700; font-size:1.25rem; text-transform:uppercase; letter-spacing:0.01em;}
+  .card-desc{color:var(--text-muted); font-size:0.9rem; margin-top:8px; line-height:1.55; flex-grow:1;}
+  .card-link{
+    display:inline-flex; align-items:center; gap:6px; margin-top:18px; align-self:flex-start;
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .card-link:hover{background:var(--orange-glow);}
+  .card-note{
+    font-family:var(--mono); font-size:0.72rem; color:var(--text-faint); margin-top:12px; letter-spacing:0.02em;
+  }
+  .team-card{padding:20px 22px; flex-direction:row; align-items:center; justify-content:space-between; gap:16px;}
+  .team-name{font-family:var(--display); font-weight:600; font-size:1.1rem; text-transform:uppercase; flex-grow:1;}
+  .team-card .card-link{margin-top:0;}
+  .team-logo-wrap{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:var(--surface-raised); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:700; font-size:0.78rem; color:var(--orange);
+  }
+  .team-logo-wrap img{width:100%; height:100%; object-fit:cover;}
+
+  /* ---------- compressed Community + Teams layout ---------- */
+  .compress-grid{display:grid; grid-template-columns:1fr 1.15fr; gap:28px; align-items:start;}
+  .compact-head{margin-bottom:14px;}
+  .compact-head .section-title{font-size:1.3rem;}
+  .compact-stack{display:flex; flex-direction:column; gap:14px;}
+  .compact-card{padding:18px 20px;}
+  .compact-card .card-icon{width:32px; height:32px; margin-bottom:10px;}
+  .compact-card .card-icon svg{width:16px; height:16px;}
+  .compact-card .card-title{font-size:1.02rem;}
+  .compact-card .card-desc{font-size:0.82rem; margin-top:6px;}
+  .compact-card .card-link{margin-top:12px; padding:7px 14px; font-size:0.8rem;}
+  .compact-teams{grid-template-columns:repeat(2, 1fr); gap:12px;}
+  .compact-teams .team-card{padding:14px 16px; gap:10px;}
+  .compact-teams .team-name{font-size:0.86rem;}
+  .compact-teams .card-link{font-size:0.76rem; padding:6px 12px;}
+
+  /* ---------- community highlights carousel ---------- */
+  .highlights-carousel{position:relative;}
+  .highlights-track{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;
+    border-radius:var(--radius); border:1px solid var(--line); background:var(--surface);
+  }
+  .highlights-track::-webkit-scrollbar{display:none;}
+  .highlight-slide{
+    flex:0 0 100%; scroll-snap-align:start; aspect-ratio:21/9; overflow:hidden;
+  }
+  .highlight-slide img{width:100%; height:100%; object-fit:cover; display:block;}
+  .highlights-dots{display:flex; justify-content:center; gap:8px; margin-top:16px;}
+  .highlight-dot{
+    width:8px; height:8px; border-radius:50%; background:var(--line); border:none; padding:0;
+    cursor:pointer; transition:background 0.2s, transform 0.2s;
+  }
+  .highlight-dot.active{background:var(--orange); transform:scale(1.3);}
+
+  /* ---------- partners ---------- */
+  .partners-grid{display:flex; flex-wrap:wrap; gap:22px; justify-content:center; padding:8px 0;}
+  .partner-circle{
+    width:88px; height:88px; border-radius:50%; overflow:hidden; flex-shrink:0;
+    border:2px solid var(--line); background:var(--surface);
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color 0.2s, transform 0.2s;
+  }
+  .partner-circle:hover{border-color:var(--orange); transform:translateY(-4px);}
+  .partner-circle img{width:100%; height:100%; object-fit:cover;}
+  .partner-circle .partner-fallback{
+    font-family:var(--display); font-weight:700; font-size:1.3rem; color:var(--orange);
+  }
+
+  /* ---------- quick links ---------- */
+  .quicklinks-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px;
+  }
+  .quicklink-card{
+    text-decoration:none; color:inherit; display:block;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px; transition:border-color 0.2s, transform 0.2s;
+  }
+  .quicklink-card:hover{border-color:var(--orange-dim); transform:translateY(-3px);}
+  .quicklink-title{font-family:var(--display); font-weight:700; font-size:1.2rem; text-transform:uppercase;}
+  .quicklink-desc{color:var(--text-muted); font-size:0.86rem; margin-top:8px; line-height:1.5;}
+  .quicklink-arrow{color:var(--orange); font-size:0.84rem; font-weight:600; margin-top:14px; display:inline-block;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .card-grid{grid-template-columns:1fr;}
+    .team-card{flex-direction:column; align-items:flex-start;}
+    .compress-grid{grid-template-columns:1fr; gap:36px;}
+    .compact-teams{grid-template-columns:1fr;}
+    .highlight-slide{aspect-ratio:4/3;}
+    .hero-grid{grid-template-columns:1fr;}
+    .spin-graphic{order:-1; max-width:180px; margin:0 auto;}
+    .stat-strip{flex-wrap:wrap;}
+    .stat{flex:1 1 45%; border-right:none; border-bottom:1px solid var(--line); padding-bottom:14px;}
+    .nav-links{gap:16px;}
+    .spotlight-card{grid-template-columns:auto 1fr; }
+    .spotlight-points{grid-column:1/-1; text-align:left; display:flex; align-items:baseline; gap:10px;}
+    .announce-card{grid-template-columns:1fr;}
+    .announce-photo{min-height:160px;}
+
+    .board-row{grid-template-columns:32px 34px 1fr; row-gap:6px;}
+    .board-row.weekly{grid-template-columns:32px 34px 1fr;}
+    .board-row.head{display:none;}
+    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss{
+      grid-column:3; font-size:0.8rem;
+    }
+    .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
+    .cell-points{grid-column:3; text-align:left; margin-top:4px;}
+  }
+</style><body>
+
+<header>
+  <nav class="nav wrap">
+    <a class="brand" href="index.html">
+      <div class="brand-mark-wrap" id="brand-logo-wrap">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="#ff6a2b" stroke-width="2"/>
+          <circle cx="20" cy="20" r="10" stroke="#ff6a2b" stroke-width="2" stroke-dasharray="3 4"/>
+          <circle cx="20" cy="20" r="3" fill="#ff6a2b"/>
+        </svg>
+      </div>
+      <div class="brand-text">BBX <span>ILOCOS</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" style="color:var(--text);">Home</a>
+      <a href="rankings.html">Rankings</a>
+      <a href="tournaments.html">Tournament History</a>
+      <a href="player.html">Player Stats</a>
+      <a href="information.html">Information</a>
+      <span class="week-pill" id="week-pill">WEEK —</span>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero" id="landing-hero">
+  <div class="wrap">
+    <div class="eyebrow">Beyblade X · Ilocos Region</div>
+    <h1>Let it<br>Rip.</h1>
+    <p>We are Beyblade X Ilocos, where speed breaks sound and spin defines destiny. We are the storm rising from the North.<br>Master the Xtreme Line. Join the brotherhood. Rule the arena.</p>
+  </div>
+</section>
+
+<section id="announcements">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Latest</div>
+      <div class="section-title">Announcements</div>
+    </div>
+    <div class="fetch-note" id="announce-note"></div>
+    <div class="announce-grid" id="announce-grid">
+      <div class="empty-note">Loading announcements…</div>
+    </div>
+  </div>
+</section>
+
+<section id="highlights">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Community</div>
+      <div class="section-title">Highlights</div>
+    </div>
+    <div class="highlights-carousel" id="highlights-carousel" style="display:none;">
+      <div class="highlights-track" id="highlights-track"></div>
+      <div class="highlights-dots" id="highlights-dots"></div>
+    </div>
+    <div class="empty-note" id="highlights-empty">No highlights yet — add up to 5 images to the Image Repository sheet (highlight_1 through highlight_5) to feature them here.</div>
+  </div>
+</section>
+
+<section id="partners">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Backed By</div>
+      <div class="section-title">Partners</div>
+    </div>
+    <div class="partners-grid" id="partners-grid">
+      <div class="empty-note">No partners listed yet.</div>
+    </div>
+  </div>
+</section>
+
+<section id="quicklinks">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Explore</div>
+      <div class="section-title">Get Around the Site</div>
+    </div>
+    <div class="quicklinks-grid">
+      <a class="quicklink-card" href="rankings.html">
+        <div class="quicklink-title">Rankings</div>
+        <div class="quicklink-desc">Live standings — This Week, All-Time, and the Juniors' Corner.</div>
+        <span class="quicklink-arrow">View Rankings →</span>
+      </a>
+      <a class="quicklink-card" href="tournaments.html">
+        <div class="quicklink-title">Tournament History</div>
+        <div class="quicklink-desc">Every BBX Ilocos event, with a link straight to the bracket.</div>
+        <span class="quicklink-arrow">View History →</span>
+      </a>
+      <a class="quicklink-card" href="player.html">
+        <div class="quicklink-title">Player Stats</div>
+        <div class="quicklink-desc">Look up any blader — achievements, win rate, and points.</div>
+        <span class="quicklink-arrow">Find a Blader →</span>
+      </a>
+      <a class="quicklink-card" href="information.html">
+        <div class="quicklink-title">Information</div>
+        <div class="quicklink-desc">Rules, community links, and teams in the scene.</div>
+        <span class="quicklink-arrow">Learn More →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">BBX ILOCOS</div>
+    <div class="footer-note">Data synced from Google Sheets · See the <a href="rankings.html" style="color:var(--orange);">Rankings</a> page for live standings</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SHEET_ID = "12bEFfajlVf02kYFzNO2HLgmjVR5F_iXCbozzcvDI3iE";
+const CONFIG = {
+  announcementsCSV:`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1913609412`,
+  partnersCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=676318792`,
+  // TODO: once the "Image Repository" tab is published, paste its gviz CSV link here:
+  imageRepoCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1694819038`
+};
+
+const SAMPLE_ANNOUNCEMENTS = [
+  {date:"08/08/2026", title:"BBX Ilocos Casual Shoot-urday", body:"Join us for an exciting Beyblade X showdown at Robinsons Ilocos!\n📅 August 1, 2026 (Saturday)\n📍 Robinsons Ilocos\n💰 Entry Fee: ₱350 (Single Entry), ₱500 (Double Entry)\n🕐 Call Time: 1:00 PM\n🏁 Hard Start: 2:00 PM\n\nGame Format: 3G Deck\n❌ Banned: Fake Parts & Metal Needle\n\n🏆 Prizes:\nChampion: CX-16 Start Dash Set\nSwiss King: CX-00 Black Wizard Arc\nFinalist: BX-49 Dran Strike\n3rd Place: CX-00 Bucks Antler\n4th Place: CX-14 Knight Fortress", photo:"", link:"", linkLabel:"", week:"Week 1"}
+];
+
+/* ---------- helpers ---------- */
+function norm(str){ return (str || "").toString().trim(); }
+function initials(name){
+  return norm(name).split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+}
+function fetchCSV(url){
+  return fetch(url).then(r=>{
+    if(!r.ok) throw new Error("Network response was not ok");
+    return r.text();
+  });
+}
+function buildHeaderIndex(headerRow){
+  const idx = {};
+  (headerRow || []).forEach((h,i)=>{ idx[norm(h).toLowerCase()] = i; });
+  return idx;
+}
+function getField(row, idx, key){
+  const i = idx[key.toLowerCase()];
+  return i === undefined ? "" : row[i];
+}
+
+/* ---------- Image Repository ---------- */
+let images = {};
+function loadImageRepo(){
+  if(!CONFIG.imageRepoCSV) return Promise.resolve();
+  return fetchCSV(CONFIG.imageRepoCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    dataRows.forEach(r=>{
+      const key = norm(getField(r, idx, "Key"));
+      const url = norm(getField(r, idx, "Image URL"));
+      if(key && url) images[key] = url;
+    });
+  }).catch(err=>{
+    console.warn("Image repository fetch failed:", err);
+  });
+}
+function preloadThenApply(url, applyFn){
+  if(!url) return;
+  const test = new Image();
+  test.onload = ()=> applyFn(url);
+  test.src = url;
+}
+function applyBrandLogo(){
+  preloadThenApply(images.site_logo, (url)=>{
+    document.querySelectorAll(".brand-mark-wrap").forEach(el=>{
+      el.innerHTML = `<img src="${url}" alt="BBX Ilocos" class="brand-mark-img">`;
+    });
+  });
+}
+function applyHeroBackground(selector, key){
+  preloadThenApply(images[key], (url)=>{
+    const el = document.querySelector(selector);
+    if(!el) return;
+    el.style.backgroundImage = `linear-gradient(180deg, rgba(10,10,11,0.55), rgba(10,10,11,0.93)), url('${url}')`;
+  });
+}
+
+/* ---------- community highlights carousel ---------- */
+function renderHighlights(){
+  const keys = ["highlight_1","highlight_2","highlight_3","highlight_4","highlight_5"];
+  const urls = keys.map(k=>images[k]).filter(Boolean);
+  const carousel = document.getElementById("highlights-carousel");
+  const emptyNote = document.getElementById("highlights-empty");
+  if(!urls.length){
+    carousel.style.display = "none";
+    emptyNote.style.display = "block";
+    return;
+  }
+  emptyNote.style.display = "none";
+  carousel.style.display = "block";
+
+  const track = document.getElementById("highlights-track");
+  const dots = document.getElementById("highlights-dots");
+  track.innerHTML = urls.map(u=>`<div class="highlight-slide"><img src="${u}" alt="Community highlight" loading="lazy"></div>`).join("");
+  dots.innerHTML = urls.map((_,i)=>`<button class="highlight-dot ${i===0 ? 'active' : ''}" data-i="${i}" aria-label="Go to highlight ${i+1}"></button>`).join("");
+
+  let current = 0;
+  function goTo(i){
+    current = ((i % urls.length) + urls.length) % urls.length;
+    track.scrollTo({left: track.clientWidth * current, behavior:"smooth"});
+    dots.querySelectorAll(".highlight-dot").forEach((d, idx)=> d.classList.toggle("active", idx === current));
+  }
+  dots.querySelectorAll(".highlight-dot").forEach(d=>{
+    d.addEventListener("click", ()=> { goTo(Number(d.dataset.i)); resetTimer(); });
+  });
+
+  let timer = setInterval(()=> goTo(current + 1), 4500);
+  function resetTimer(){
+    clearInterval(timer);
+    timer = setInterval(()=> goTo(current + 1), 4500);
+  }
+  track.addEventListener("touchstart", resetTimer, {passive:true});
+  track.addEventListener("mousedown", resetTimer);
+
+  let scrollDebounce;
+  track.addEventListener("scroll", ()=>{
+    clearTimeout(scrollDebounce);
+    scrollDebounce = setTimeout(()=>{
+      const idx = Math.round(track.scrollLeft / track.clientWidth);
+      current = idx;
+      dots.querySelectorAll(".highlight-dot").forEach((d,i)=> d.classList.toggle("active", i === current));
+    }, 120);
+  });
+}
+
+/* ---------- load + render: announcements ---------- */
+function loadAnnouncements(){
+  return fetchCSV(CONFIG.announcementsCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    let items = dataRows.map(r=>({
+      date: norm(getField(r, idx, "Date")),
+      title: norm(getField(r, idx, "Title")),
+      body: norm(getField(r, idx, "Body")),
+      photo: norm(getField(r, idx, "Photo URL")),
+      link: norm(getField(r, idx, "Link URL")),
+      linkLabel: norm(getField(r, idx, "Link Label")),
+      week: norm(getField(r, idx, "Week"))
+    })).filter(a=>a.title || a.body);
+    items.reverse();
+    const currentWeekLabel = (items.find(a=>a.week) || {}).week || "";
+    document.getElementById("week-pill").textContent = (currentWeekLabel || "WEEK —").toUpperCase();
+    renderAnnouncements(items);
+  }).catch(err=>{
+    console.warn("Announcements fetch failed, using sample data:", err);
+    renderAnnouncements(SAMPLE_ANNOUNCEMENTS);
+    document.getElementById("announce-note").textContent = "Showing sample data — connect your published sheet link to go live.";
+    document.getElementById("announce-note").classList.add("show");
+  });
+}
+function renderAnnouncements(items){
+  const grid = document.getElementById("announce-grid");
+  if(!items.length){
+    grid.innerHTML = `<div class="empty-note">No announcements yet.</div>`;
+    return;
+  }
+  grid.innerHTML = items.map(a=>`
+    <div class="announce-card ${a.photo ? '' : 'no-photo'}">
+      ${a.photo ? `<img src="${a.photo}" class="announce-photo" alt="" onerror="this.style.display='none'">` : ''}
+      <div class="announce-body-wrap">
+        ${a.date ? `<div class="announce-date">${a.date}</div>` : ''}
+        <div class="announce-title">${a.title || 'Announcement'}</div>
+        <div class="announce-body">${a.body}</div>
+        ${a.link ? `<a class="announce-link" href="${a.link}" target="_blank" rel="noopener">${a.linkLabel || 'Learn more'}</a>` : ''}
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ---------- load + render: partners ---------- */
+function loadPartners(){
+  if(!CONFIG.partnersCSV) return Promise.resolve();
+  return fetchCSV(CONFIG.partnersCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    const partners = dataRows.map(r=>({
+      name: norm(getField(r, idx, "Partner Name")),
+      logo: norm(getField(r, idx, "Logo URL")),
+      link: norm(getField(r, idx, "Link URL"))
+    })).filter(p=>p.name);
+    renderPartners(partners);
+  }).catch(err=>{
+    console.warn("Partners fetch failed:", err);
+  });
+}
+function renderPartners(partners){
+  const grid = document.getElementById("partners-grid");
+  if(!partners.length){
+    grid.innerHTML = `<div class="empty-note">No partners listed yet.</div>`;
+    return;
+  }
+  grid.innerHTML = partners.map(p=>{
+    const inner = p.logo
+      ? `<img src="${p.logo}" alt="${p.name}" onerror="this.parentElement.innerHTML='<span class=&quot;partner-fallback&quot;>${initials(p.name)}</span>'">`
+      : `<span class="partner-fallback">${initials(p.name)}</span>`;
+    return p.link
+      ? `<a class="partner-circle" href="${p.link}" target="_blank" rel="noopener" title="${p.name}">${inner}</a>`
+      : `<div class="partner-circle" title="${p.name}">${inner}</div>`;
+  }).join("");
+}
+
+/* ---------- init ---------- */
+Promise.all([loadAnnouncements(), loadPartners(), loadImageRepo()]).then(()=>{
+  applyBrandLogo();
+  applyHeroBackground("#landing-hero", "hero_bg_landing");
+  renderHighlights();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tournament History — BBX Ilocos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #19191b;
+    --surface: #232326;
+    --surface-raised: #2c2c30;
+    --line: #38383c;
+    --orange: #ff6a2b;
+    --orange-dim: #6b3a22;
+    --orange-glow: rgba(255,106,43,0.18);
+    --text: #f1efe9;
+    --text-muted: #9a9994;
+    --text-faint: #6c6b68;
+    --grey-ring: #55555a;
+    --radius: 14px;
+    --display: 'Saira Condensed', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- background texture ---------- */
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(255,106,43,0.06), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(255,106,43,0.04), transparent 45%);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(25,25,27,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; flex-wrap:wrap; row-gap:10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand-mark-wrap{width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-mark{width:30px; height:30px; flex-shrink:0;}
+  .brand-mark-img{width:100%; height:100%; object-fit:contain; border-radius:6px;}
+  .brand-text{font-family:var(--display); font-weight:700; font-size:1.3rem; letter-spacing:0.02em;}
+  .brand-text span{color:var(--orange);}
+  .nav-links{display:flex; align-items:center; gap:28px;}
+  .nav-links a{
+    font-size:0.92rem; color:var(--text-muted); text-decoration:none;
+    font-weight:500; transition:color 0.2s;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .week-pill{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.06em;
+    color:var(--orange); border:1px solid var(--orange-dim);
+    background:var(--orange-glow); padding:5px 11px; border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:72px 0 56px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-grid{
+    display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.14em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:16px; height:1px; background:var(--orange);}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .hero-sub{
+    color:var(--text-muted); font-size:1.05rem; max-width:480px; margin-top:18px;
+  }
+  .stat-strip{
+    display:flex; gap:0; margin-top:36px; border-top:1px solid var(--line);
+  }
+  .stat{
+    flex:1; padding:18px 20px 0; border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-num{font-family:var(--mono); font-weight:600; font-size:1.6rem; color:var(--orange);}
+  .stat-label{font-size:0.76rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.07em; margin-top:2px;}
+
+  .spin-graphic{display:flex; justify-content:center; align-items:center;}
+  .spin-graphic svg{width:100%; max-width:280px; height:auto;}
+  .ring-outer{
+    transform-origin:150px 150px;
+    animation:spin 14s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .ring-outer{ animation:none; } }
+
+  /* ---------- section shell ---------- */
+  section{padding:64px 0;}
+  .section-head{margin-bottom:32px;}
+  .section-eyebrow{
+    font-family:var(--mono); font-size:0.76rem; letter-spacing:0.12em;
+    color:var(--orange); text-transform:uppercase; margin-bottom:8px;
+  }
+  .section-title{
+    font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase;
+  }
+  .section-note{color:var(--text-muted); font-size:0.92rem; margin-top:6px;}
+
+  /* ---------- spotlight ---------- */
+  .spotlight-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;
+  }
+  .spotlight-photo-wrap{position:relative; width:96px; height:96px; flex-shrink:0;}
+  .spotlight-photo, .avatar-fallback{
+    width:96px; height:96px; border-radius:50%; object-fit:cover;
+    border:2px solid var(--orange);
+  }
+  .avatar-fallback{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); font-size:2.2rem; color:var(--orange);
+  }
+  .spotlight-name{font-family:var(--display); font-weight:700; font-size:1.7rem; text-transform:uppercase;}
+  .spotlight-team{color:var(--text-muted); font-size:0.92rem; margin-top:2px;}
+  .spotlight-tags{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .spotlight-points{text-align:right;}
+  .spotlight-points .stat-num{font-size:2.4rem;}
+  .spotlight-points .stat-label{text-align:right;}
+
+  .tag{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.04em;
+    padding:4px 10px; border-radius:100px; text-transform:uppercase;
+  }
+  .tag-champion{background:var(--orange); color:#19191b; font-weight:600;}
+  .tag-finalist{border:1px solid var(--orange); color:var(--orange);}
+  .tag-3rd, .tag-placer{border:1px solid var(--grey-ring); color:var(--text-muted);}
+  .tag-swiss-king{border:1px solid var(--text-faint); color:var(--text-muted); background:var(--surface-raised);}
+
+  /* ---------- leaderboard ---------- */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px;}
+  .segmented{
+    display:inline-flex; background:var(--surface); border:1px solid var(--line);
+    border-radius:100px; padding:4px;
+  }
+  .segmented button{
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    padding:9px 20px; border-radius:100px; transition:all 0.2s;
+  }
+  .segmented button.active{background:var(--orange); color:#19191b;}
+
+  .board-row{
+    display:grid; grid-template-columns:44px 40px 1.6fr 1fr 0.8fr 1fr 0.7fr;
+    gap:14px; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line);
+  }
+  .board-row.head{
+    font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-faint); border-bottom:1px solid var(--line);
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
+
+  .rank-ring{
+    position:relative; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:0.95rem;
+    border:2px solid var(--grey-ring); color:var(--text-muted);
+  }
+  .rank-ring.r1{border-color:var(--orange); color:var(--orange); box-shadow:0 0 0 3px var(--orange-glow);}
+  .rank-ring.r2{border-color:#c9793f; color:#e0a679;}
+  .rank-ring.r3{border-color:#8a5a3a; color:#b4886a;}
+
+  .board-photo, .board-avatar{width:36px; height:36px; border-radius:50%; object-fit:cover;}
+  .board-avatar{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-raised); font-family:var(--display); color:var(--orange); font-size:1rem;
+  }
+  .blader-cell{display:flex; align-items:center; gap:10px; min-width:0;}
+  .blader-name{font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cell-label{display:none;}
+  .cell-team{color:var(--text-muted); font-size:0.88rem;}
+  .cell-wl{font-family:var(--mono); font-size:0.88rem;}
+  .cell-wl .w{color:var(--orange);}
+  .cell-topcut{font-family:var(--mono); font-size:0.88rem; color:var(--text-muted);}
+  .cell-points{font-family:var(--mono); font-weight:600; font-size:1.05rem; text-align:right; color:var(--text);}
+  .board-container{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .board-scroll{overflow-x:auto;}
+
+  /* ---------- announcements ---------- */
+  .announce-grid{display:flex; flex-direction:column; gap:20px;}
+  .announce-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:grid; grid-template-columns:220px 1fr;
+  }
+  .announce-card.no-photo{grid-template-columns:1fr;}
+  .announce-photo{width:100%; height:100%; object-fit:cover; min-height:180px; background:var(--surface-raised);}
+  .announce-body-wrap{padding:24px;}
+  .announce-date{font-family:var(--mono); font-size:0.76rem; color:var(--orange); letter-spacing:0.05em;}
+  .announce-title{font-family:var(--display); font-weight:700; font-size:1.4rem; margin-top:6px; text-transform:uppercase;}
+  .announce-body{
+    color:var(--text-muted); font-size:0.92rem; white-space:pre-wrap; margin-top:12px; line-height:1.6;
+  }
+  .announce-link{
+    display:inline-block; margin-top:16px; font-family:var(--body); font-weight:600; font-size:0.88rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .announce-link:hover{background:var(--orange-glow);}
+
+  .empty-note{
+    font-size:0.88rem; color:var(--text-faint); padding:24px; text-align:center;
+  }
+  .fetch-note{
+    font-family:var(--mono); font-size:0.74rem; color:var(--text-faint);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; margin-bottom:16px; display:none;
+  }
+  .fetch-note.show{display:block;}
+
+  footer{
+    border-top:1px solid var(--line); padding:36px 0; margin-top:24px;
+  }
+  .footer-row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center;}
+  .footer-brand{font-family:var(--display); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;}
+  .footer-note{color:var(--text-faint); font-size:0.82rem;}
+
+  /* ---------- page hero (non-home pages) ---------- */
+  .page-hero{padding:72px 0 56px; border-bottom:1px solid var(--line); background-size:cover; background-position:center; transition:background-image 0.3s;}
+  .page-hero h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:0.95; letter-spacing:0.01em; text-transform:uppercase;
+  }
+  .page-hero p{color:var(--text-muted); font-size:1rem; max-width:520px; margin-top:14px;}
+
+  /* ---------- cards / link cards ---------- */
+  .card-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:20px;}
+  .card-grid.teams{grid-template-columns:repeat(2, 1fr);}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px; display:flex; flex-direction:column;
+  }
+  .card-icon{
+    width:40px; height:40px; border-radius:10px; background:var(--orange-glow);
+    border:1px solid var(--orange-dim); display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px; flex-shrink:0;
+  }
+  .card-icon svg{width:20px; height:20px;}
+  .card-title{font-family:var(--display); font-weight:700; font-size:1.25rem; text-transform:uppercase; letter-spacing:0.01em;}
+  .card-desc{color:var(--text-muted); font-size:0.9rem; margin-top:8px; line-height:1.55; flex-grow:1;}
+  .card-link{
+    display:inline-flex; align-items:center; gap:6px; margin-top:18px; align-self:flex-start;
+    font-family:var(--body); font-weight:600; font-size:0.86rem;
+    color:var(--orange); border:1px solid var(--orange-dim); padding:9px 18px; border-radius:8px;
+    text-decoration:none; transition:background 0.2s;
+  }
+  .card-link:hover{background:var(--orange-glow);}
+  .card-note{
+    font-family:var(--mono); font-size:0.72rem; color:var(--text-faint); margin-top:12px; letter-spacing:0.02em;
+  }
+  .team-card{padding:20px 22px; flex-direction:row; align-items:center; justify-content:space-between; gap:16px;}
+  .team-name{font-family:var(--display); font-weight:600; font-size:1.1rem; text-transform:uppercase;}
+  .team-card .card-link{margin-top:0;}
+
+  /* ---------- tournament cards ---------- */
+  .tournament-card{padding:24px 26px;}
+  .tournament-title{font-family:var(--display); font-weight:700; font-size:1.3rem; text-transform:uppercase; line-height:1.15;}
+  .tournament-date{
+    font-family:var(--mono); font-size:0.76rem; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:0.05em; margin-top:8px;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .card-grid{grid-template-columns:1fr;}
+    .team-card{flex-direction:column; align-items:flex-start;}
+    .hero-grid{grid-template-columns:1fr;}
+    .spin-graphic{order:-1; max-width:180px; margin:0 auto;}
+    .stat-strip{flex-wrap:wrap;}
+    .stat{flex:1 1 45%; border-right:none; border-bottom:1px solid var(--line); padding-bottom:14px;}
+    .nav-links{gap:16px;}
+    .spotlight-card{grid-template-columns:auto 1fr; }
+    .spotlight-points{grid-column:1/-1; text-align:left; display:flex; align-items:baseline; gap:10px;}
+    .announce-card{grid-template-columns:1fr;}
+    .announce-photo{min-height:160px;}
+
+    .board-row{grid-template-columns:32px 34px 1fr; row-gap:6px;}
+    .board-row.weekly{grid-template-columns:32px 34px 1fr;}
+    .board-row.head{display:none;}
+    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss{
+      grid-column:3; font-size:0.8rem;
+    }
+    .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
+    .cell-points{grid-column:3; text-align:left; margin-top:4px;}
+  }
+</style><body>
+
+<header>
+  <nav class="nav wrap">
+    <a class="brand" href="index.html">
+      <div class="brand-mark-wrap" id="brand-logo-wrap">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="#ff6a2b" stroke-width="2"/>
+          <circle cx="20" cy="20" r="10" stroke="#ff6a2b" stroke-width="2" stroke-dasharray="3 4"/>
+          <circle cx="20" cy="20" r="3" fill="#ff6a2b"/>
+        </svg>
+      </div>
+      <div class="brand-text">BBX <span>ILOCOS</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="rankings.html">Rankings</a>
+      <a href="tournaments.html" style="color:var(--text);">Tournament History</a>
+      <a href="player.html">Player Stats</a>
+      <a href="information.html">Information</a>
+      <span class="week-pill" id="week-pill">WEEK —</span>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero" id="tournaments-hero">
+  <div class="wrap">
+    <div class="eyebrow">BBX Ilocos · Archive</div>
+    <h1>Tournament History.</h1>
+    <p>Every BBX Ilocos event, with a link straight to the bracket.</p>
+  </div>
+</section>
+
+<section id="tournament-list">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">All Events</div>
+      <div class="section-title">Tournaments</div>
+    </div>
+    <div class="fetch-note" id="tournament-note"></div>
+    <div class="card-grid" id="tournament-grid">
+      <div class="empty-note">Loading tournaments…</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">BBX ILOCOS</div>
+    <div class="footer-note">Data synced from Google Sheets · See the <a href="information.html" style="color:var(--orange);">Information</a> page for rules, community links &amp; announcements</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SHEET_ID = "12bEFfajlVf02kYFzNO2HLgmjVR5F_iXCbozzcvDI3iE";
+const CONFIG = {
+  tournamentsCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1686785245`,
+  announcementsCSV:`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1913609412`,
+  // TODO: once the "Image Repository" tab is published, paste its gviz CSV link here:
+  imageRepoCSV: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=1694819038`
+};
+
+/* ---------- helpers ---------- */
+function norm(str){ return (str || "").toString().trim(); }
+function fetchCSV(url){
+  return fetch(url).then(r=>{
+    if(!r.ok) throw new Error("Network response was not ok");
+    return r.text();
+  });
+}
+function buildHeaderIndex(headerRow){
+  const idx = {};
+  (headerRow || []).forEach((h,i)=>{ idx[norm(h).toLowerCase()] = i; });
+  return idx;
+}
+function getField(row, idx, key){
+  const i = idx[key.toLowerCase()];
+  return i === undefined ? "" : row[i];
+}
+
+/* ---------- Image Repository ---------- */
+let images = {};
+function loadImageRepo(){
+  if(!CONFIG.imageRepoCSV) return Promise.resolve();
+  return fetchCSV(CONFIG.imageRepoCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    dataRows.forEach(r=>{
+      const key = norm(getField(r, idx, "Key"));
+      const url = norm(getField(r, idx, "Image URL"));
+      if(key && url) images[key] = url;
+    });
+  }).catch(err=>{
+    console.warn("Image repository fetch failed:", err);
+  });
+}
+function preloadThenApply(url, applyFn){
+  if(!url) return;
+  const test = new Image();
+  test.onload = ()=> applyFn(url);
+  test.src = url;
+}
+function applyBrandLogo(){
+  preloadThenApply(images.site_logo, (url)=>{
+    document.querySelectorAll(".brand-mark-wrap").forEach(el=>{
+      el.innerHTML = `<img src="${url}" alt="BBX Ilocos" class="brand-mark-img">`;
+    });
+  });
+}
+function applyHeroBackground(selector, key){
+  preloadThenApply(images[key], (url)=>{
+    const el = document.querySelector(selector);
+    if(!el) return;
+    el.style.backgroundImage = `linear-gradient(180deg, rgba(10,10,11,0.55), rgba(10,10,11,0.93)), url('${url}')`;
+  });
+}
+function parseDateLoose(str){
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* ---------- load: current week label (for the nav pill) ---------- */
+function loadWeekLabel(){
+  return fetchCSV(CONFIG.announcementsCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1).reverse();
+    const weekRow = dataRows.find(r=> norm(getField(r, idx, "Week")));
+    const week = weekRow ? norm(getField(weekRow, idx, "Week")) : "";
+    document.getElementById("week-pill").textContent = (week || "WEEK —").toUpperCase();
+  }).catch(()=>{});
+}
+
+/* ---------- load + render: tournaments ---------- */
+function loadTournaments(){
+  return fetchCSV(CONFIG.tournamentsCSV).then(text=>{
+    const rows = Papa.parse(text, {header:false, skipEmptyLines:true}).data;
+    const idx = buildHeaderIndex(rows[0]);
+    const dataRows = rows.slice(1);
+    let items = dataRows.map(r=>({
+      title: norm(getField(r, idx, "Tournament Title")),
+      date: norm(getField(r, idx, "Date")),
+      link: norm(getField(r, idx, "Challonge Link"))
+    })).filter(t=>t.title);
+    items.sort((a,b)=>{
+      const da = parseDateLoose(a.date), db = parseDateLoose(b.date);
+      if(da && db) return db - da;
+      if(da) return -1;
+      if(db) return 1;
+      return 0;
+    });
+    renderTournaments(items);
+  }).catch(err=>{
+    console.warn("Tournaments fetch failed:", err);
+    document.getElementById("tournament-grid").innerHTML = `<div class="empty-note">Couldn't load tournament history right now.</div>`;
+    document.getElementById("tournament-note").textContent = "Couldn't reach the Tournaments sheet — check the link.";
+    document.getElementById("tournament-note").classList.add("show");
+  });
+}
+function renderTournaments(items){
+  const grid = document.getElementById("tournament-grid");
+  if(!items.length){
+    grid.innerHTML = `<div class="empty-note">No tournaments logged yet.</div>`;
+    return;
+  }
+  grid.innerHTML = items.map(t=>`
+    <div class="card tournament-card">
+      <div class="tournament-title">${t.title}</div>
+      ${t.date ? `<div class="tournament-date">${t.date}</div>` : ''}
+      ${t.link ? `<a class="card-link" href="${t.link}" target="_blank" rel="noopener">View Bracket →</a>` : ''}
+    </div>
+  `).join("");
+}
+
+Promise.all([loadTournaments(), loadWeekLabel(), loadImageRepo()]).then(()=>{
+  applyBrandLogo();
+  applyHeroBackground("#tournaments-hero", "hero_bg_tournaments");
+});
+</script>
+</body>
+</html>
