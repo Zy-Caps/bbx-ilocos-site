@@ -177,6 +177,7 @@
   }
   .board-row:last-child{border-bottom:none;}
   .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
+  .board-row.awards{grid-template-columns:44px 40px 1.3fr 0.8fr 0.6fr 0.6fr 0.6fr 0.6fr 0.7fr;}
 
   .rank-ring{
     position:relative; width:38px; height:38px; border-radius:50%;
@@ -202,6 +203,8 @@
   .cell-wl{font-family:var(--mono); font-size:0.88rem;}
   .cell-wl .w{color:var(--orange);}
   .cell-topcut{font-family:var(--mono); font-size:0.88rem; color:var(--text-muted);}
+  .cell-award-count{font-family:var(--mono); font-size:0.92rem; text-align:center; color:var(--text);}
+  .cell-award-count .n{color:var(--orange); font-weight:600;}
   .cell-points{font-family:var(--mono); font-weight:600; font-size:1.05rem; text-align:right; color:var(--text);}
   .board-container{
     background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
@@ -265,8 +268,9 @@
 
     .board-row{grid-template-columns:32px 34px 1fr; row-gap:6px;}
     .board-row.weekly{grid-template-columns:32px 34px 1fr;}
+    .board-row.awards{grid-template-columns:32px 34px 1fr;}
     .board-row.head{display:none;}
-    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss{
+    .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss, .cell-award-count{
       grid-column:3; font-size:0.8rem;
     }
     .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
@@ -342,7 +346,8 @@
     <div class="toggle-row">
       <div class="segmented">
         <button id="tab-weekly" class="active">This Week</button>
-        <button id="tab-alltime">All-Time</button>
+        <button id="tab-alltime">Swiss Ranking</button>
+        <button id="tab-awards">Award Ranking</button>
       </div>
     </div>
     <div class="fetch-note" id="leaderboard-note"></div>
@@ -366,7 +371,8 @@
     <div class="toggle-row">
       <div class="segmented">
         <button id="tab-juniors-recent" class="active">Recent Tournament</button>
-        <button id="tab-juniors-alltime">All-Time Stats</button>
+        <button id="tab-juniors-alltime">Swiss Ranking</button>
+        <button id="tab-juniors-awards">Award Ranking</button>
       </div>
     </div>
     <div class="fetch-note" id="juniors-leaderboard-note"></div>
@@ -465,6 +471,25 @@ function weeklyRank(r){
   if(award === "placer") return 4;
   return 5;
 }
+/* A row only counts as a real participant if it shows SOME sign of play:
+   a non-0-0 Swiss record, or nonzero points. If both are blank/zero,
+   treat it as a leftover/non-participant row and drop it from "This Week". */
+function didParticipate(r){
+  const hasRecord = (r.sw > 0 || r.sl > 0);
+  const hasPoints = r.points > 0;
+  return hasRecord || hasPoints;
+}
+/* Awards ranking: most prestigious achievement wins first.
+   Championships > Swiss Kings > Finalists > 3rd Places > Placers,
+   each compared in descending order; ties broken alphabetically. */
+function compareAwards(a, b){
+  return (b.championships||0) - (a.championships||0)
+      || (b.swissKings||0) - (a.swissKings||0)
+      || (b.finalists||0) - (a.finalists||0)
+      || (b.thirds||0) - (a.thirds||0)
+      || (b.placers||0) - (a.placers||0)
+      || a.name.localeCompare(b.name);
+}
 function fetchCSV(url){
   return fetch(url).then(r=>{
     if(!r.ok) throw new Error("Network response was not ok");
@@ -532,6 +557,7 @@ let juniorsAllTimeData = [];
 let juniorsRecentData = { rows:[] };
 let currentJuniorsTab = "recent";
 let currentWeekLabel = "";
+let juniorsHasAwardsData = false; // becomes true once Juniors All-Time has real achievement columns
 
 /* ---------- load: all-time leaderboard ---------- */
 function loadAllTime(){
@@ -546,7 +572,12 @@ function loadAllTime(){
       sw: Number(getField(r, idx, "Swiss Wins")) || 0,
       sl: Number(getField(r, idx, "Swiss Losses")) || 0,
       topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
-      points: Number(getField(r, idx, "Total Points")) || 0
+      points: Number(getField(r, idx, "Total Points")) || 0,
+      championships: Number(getField(r, idx, "Championships")) || 0,
+      finalists: Number(getField(r, idx, "Finalists")) || 0,
+      thirds: Number(getField(r, idx, "3rd Places")) || 0,
+      placers: Number(getField(r, idx, "Placers")) || 0,
+      swissKings: Number(getField(r, idx, "Swiss Kings")) || 0
     })).filter(r=>r.name);
     allTimeData.sort((a,b)=>b.points - a.points);
   }).catch(err=>{
@@ -574,7 +605,7 @@ function loadWeekly(){
       award: norm(getField(r, idx, "Award")),
       swissking: norm(getField(r, idx, "Swiss King")),
       points: Number(getField(r, idx, "Points")) || 0
-    })).filter(r=>r.name);
+    })).filter(r=>r.name).filter(didParticipate);
 
     parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
     weeklyData = { week: currentWeekLabel || "—", rows: parsedRows };
@@ -603,9 +634,16 @@ function loadJuniorsAllTime(){
       sw: Number(getField(r, idx, "Swiss Wins")) || 0,
       sl: Number(getField(r, idx, "Swiss Losses")) || 0,
       topcut: Number(getField(r, idx, "Topcut Attendance")) || 0,
-      points: Number(getField(r, idx, "Total Points")) || 0
+      points: Number(getField(r, idx, "Total Points")) || 0,
+      championships: Number(getField(r, idx, "Championships")) || 0,
+      finalists: Number(getField(r, idx, "Finalists")) || 0,
+      thirds: Number(getField(r, idx, "3rd Places")) || 0,
+      placers: Number(getField(r, idx, "Placers")) || 0,
+      swissKings: Number(getField(r, idx, "Swiss Kings")) || 0
     })).filter(r=>r.name);
     juniorsAllTimeData.sort((a,b)=> b.points - a.points);
+    juniorsHasAwardsData = juniorsAllTimeData.some(r=>
+      (r.championships + r.finalists + r.thirds + r.placers + r.swissKings) > 0);
   }).catch(err=>{
     console.warn("Juniors All-Time fetch failed:", err);
     juniorsAllTimeData = [];
@@ -634,7 +672,7 @@ function loadJuniorsRecent(){
       award: norm(getField(r, idx, "Award")),
       swissking: norm(getField(r, idx, "Swiss King")),
       points: Number(getField(r, idx, "Points")) || 0
-    })).filter(r=>r.name);
+    })).filter(r=>r.name).filter(didParticipate);
     parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
     juniorsRecentData = { rows: parsedRows };
   }).catch(err=>{
@@ -728,6 +766,26 @@ function renderBoard(containerId, mode, rows, emptyMsg){
         </div>`;
     });
     container.innerHTML = html;
+  } else if(mode === "awards"){
+    let html = `
+      <div class="board-row head awards">
+        <div></div><div></div><div>Blader</div><div>Team</div><div>Champs</div><div>Swiss Kings</div><div>Finals</div><div>3rds</div><div>Placers</div>
+      </div>`;
+    rows.forEach((r,i)=>{
+      html += `
+        <div class="board-row awards">
+          <div class="${rankClass(i)}">${i+1}</div>
+          ${avatarHTML(r.name, r.photo, "board")}
+          <div class="blader-cell"><a class="blader-name" href="player.html?name=${encodeURIComponent(r.name)}">${r.name}</a></div>
+          <div class="cell-team"><span class="cell-label">Team</span>${r.team}</div>
+          <div class="cell-award-count"><span class="cell-label">Champs</span><span class="n">${r.championships||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">Swiss Kings</span><span class="n">${r.swissKings||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">Finals</span><span class="n">${r.finalists||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">3rds</span><span class="n">${r.thirds||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">Placers</span><span class="n">${r.placers||0}</span></div>
+        </div>`;
+    });
+    container.innerHTML = html;
   } else {
     let html = `
       <div class="board-row head">
@@ -767,8 +825,17 @@ function updateMoreButton(wrapId, btnId, total, visibleCount, expandFn, collapse
 }
 
 function renderLeaderboard(){
-  const allRows = currentTab === "weekly" ? weeklyData.rows : allTimeData;
-  const emptyMsg = currentTab === "weekly" ? "No results logged for this week yet." : "No leaderboard data yet.";
+  let allRows, emptyMsg;
+  if(currentTab === "weekly"){
+    allRows = weeklyData.rows;
+    emptyMsg = "No results logged for this week yet.";
+  } else if(currentTab === "awards"){
+    allRows = allTimeData.slice().sort(compareAwards);
+    emptyMsg = "No achievement data yet.";
+  } else {
+    allRows = allTimeData;
+    emptyMsg = "No leaderboard data yet.";
+  }
   renderBoard("board-scroll", currentTab, allRows.slice(0, mainVisibleCount), emptyMsg);
   updateMoreButton("board-more-wrap", "board-more-btn", allRows.length, mainVisibleCount,
     ()=>{ mainVisibleCount = allRows.length; renderLeaderboard(); },
@@ -777,11 +844,26 @@ function renderLeaderboard(){
 }
 
 function renderJuniorsBoard(){
-  const allRows = currentJuniorsTab === "recent" ? juniorsRecentData.rows : juniorsAllTimeData;
-  const emptyMsg = currentJuniorsTab === "recent"
-    ? "No Juniors tournament results logged yet — publish the Juniors Recent Tournament tab and add its link to CONFIG."
-    : "No Juniors all-time stats yet — publish the Juniors All-Time tab and add its link to CONFIG.";
-  renderBoard("juniors-board-scroll", currentJuniorsTab === "recent" ? "weekly" : "alltime", allRows.slice(0, juniorsVisibleCount), emptyMsg);
+  let allRows, mode, emptyMsg;
+  if(currentJuniorsTab === "recent"){
+    allRows = juniorsRecentData.rows;
+    mode = "weekly";
+    emptyMsg = "No Juniors tournament results logged yet — publish the Juniors Recent Tournament tab and add its link to CONFIG.";
+  } else if(currentJuniorsTab === "awards"){
+    mode = "awards";
+    if(!juniorsHasAwardsData){
+      allRows = [];
+      emptyMsg = "Juniors achievement tracking isn't set up yet — add Championships/Finalists/3rd Places/Placers/Swiss Kings columns to Juniors All-Time to enable this.";
+    } else {
+      allRows = juniorsAllTimeData.slice().sort(compareAwards);
+      emptyMsg = "No achievement data yet.";
+    }
+  } else {
+    allRows = juniorsAllTimeData;
+    mode = "alltime";
+    emptyMsg = "No Juniors all-time stats yet — publish the Juniors All-Time tab and add its link to CONFIG.";
+  }
+  renderBoard("juniors-board-scroll", mode, allRows.slice(0, juniorsVisibleCount), emptyMsg);
   updateMoreButton("juniors-board-more-wrap", "juniors-board-more-btn", allRows.length, juniorsVisibleCount,
     ()=>{ juniorsVisibleCount = allRows.length; renderJuniorsBoard(); },
     ()=>{ juniorsVisibleCount = LEADERBOARD_PAGE_SIZE; renderJuniorsBoard(); document.getElementById("juniors-board-scroll").scrollIntoView({behavior:"smooth", block:"nearest"}); }
@@ -789,33 +871,44 @@ function renderJuniorsBoard(){
 }
 
 /* ---------- tab switching ---------- */
+function setActiveTab(ids, activeId){
+  ids.forEach(id=> document.getElementById(id).classList.toggle("active", id === activeId));
+}
 document.getElementById("tab-weekly").addEventListener("click", ()=>{
   currentTab = "weekly";
   mainVisibleCount = LEADERBOARD_PAGE_SIZE;
-  document.getElementById("tab-weekly").classList.add("active");
-  document.getElementById("tab-alltime").classList.remove("active");
+  setActiveTab(["tab-weekly","tab-alltime","tab-awards"], "tab-weekly");
   renderLeaderboard();
 });
 document.getElementById("tab-alltime").addEventListener("click", ()=>{
   currentTab = "alltime";
   mainVisibleCount = LEADERBOARD_PAGE_SIZE;
-  document.getElementById("tab-alltime").classList.add("active");
-  document.getElementById("tab-weekly").classList.remove("active");
+  setActiveTab(["tab-weekly","tab-alltime","tab-awards"], "tab-alltime");
+  renderLeaderboard();
+});
+document.getElementById("tab-awards").addEventListener("click", ()=>{
+  currentTab = "awards";
+  mainVisibleCount = LEADERBOARD_PAGE_SIZE;
+  setActiveTab(["tab-weekly","tab-alltime","tab-awards"], "tab-awards");
   renderLeaderboard();
 });
 
 document.getElementById("tab-juniors-recent").addEventListener("click", ()=>{
   currentJuniorsTab = "recent";
   juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
-  document.getElementById("tab-juniors-recent").classList.add("active");
-  document.getElementById("tab-juniors-alltime").classList.remove("active");
+  setActiveTab(["tab-juniors-recent","tab-juniors-alltime","tab-juniors-awards"], "tab-juniors-recent");
   renderJuniorsBoard();
 });
 document.getElementById("tab-juniors-alltime").addEventListener("click", ()=>{
   currentJuniorsTab = "alltime";
   juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
-  document.getElementById("tab-juniors-alltime").classList.add("active");
-  document.getElementById("tab-juniors-recent").classList.remove("active");
+  setActiveTab(["tab-juniors-recent","tab-juniors-alltime","tab-juniors-awards"], "tab-juniors-alltime");
+  renderJuniorsBoard();
+});
+document.getElementById("tab-juniors-awards").addEventListener("click", ()=>{
+  currentJuniorsTab = "awards";
+  juniorsVisibleCount = LEADERBOARD_PAGE_SIZE;
+  setActiveTab(["tab-juniors-recent","tab-juniors-alltime","tab-juniors-awards"], "tab-juniors-awards");
   renderJuniorsBoard();
 });
 

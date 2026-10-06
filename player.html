@@ -327,6 +327,7 @@
   }
   .profile-name{font-family:var(--display); font-weight:700; font-size:2rem; text-transform:uppercase; line-height:1;}
   .profile-team{color:var(--text-muted); font-size:0.95rem; margin-top:4px;}
+  .profile-alias{color:var(--text-faint); font-size:0.85rem; font-style:italic; margin-top:2px;}
   .profile-division{
     display:inline-block; margin-top:10px; font-family:var(--mono); font-size:0.72rem; letter-spacing:0.05em;
     text-transform:uppercase; color:var(--text-muted); border:1px solid var(--line); border-radius:100px; padding:3px 11px;
@@ -404,8 +405,8 @@
 <section class="page-hero" id="player-hero">
   <div class="wrap">
     <div class="eyebrow">BBX Ilocos · Bladers</div>
-    <h1>Player Stats.</h1>
-    <p>Look up any blader in the system — Open or Juniors.</p>
+    <h1>Know Your Rivals.</h1>
+    <p>Every blader in the brotherhood, tracked — wins, losses, and the hardware to prove it. Search the arena's finest.</p>
     <div class="search-wrap" style="margin-top:24px;">
       <input type="text" class="search-input" id="player-search" placeholder="Search for a blader by name…" autocomplete="off">
       <div class="suggestions" id="player-suggestions"></div>
@@ -509,6 +510,7 @@ function loadOpenRoster(){
     const players = dataRows.map(r=>({
       division: "Open",
       name: norm(getField(r, idx, "Name")),
+      alias: norm(getField(r, idx, "Alias")),
       team: norm(getField(r, idx, "Team")),
       photo: norm(getField(r, idx, "Photo URL")),
       sw: Number(getField(r, idx, "Swiss Wins")) || 0,
@@ -536,6 +538,7 @@ function loadJuniorsRoster(){
     const players = dataRows.map(r=>({
       division: "Juniors",
       name: norm(getField(r, idx, "Name")),
+      alias: norm(getField(r, idx, "Alias")),
       team: norm(getField(r, idx, "Team")),
       photo: norm(getField(r, idx, "Photo URL")),
       sw: Number(getField(r, idx, "Swiss Wins")) || 0,
@@ -602,6 +605,7 @@ function renderProfile(p){
       ${profileAvatarHTML(p)}
       <div>
         <div class="profile-name">${p.name}</div>
+        ${p.alias ? `<div class="profile-alias">"${p.alias}"</div>` : ''}
         <div class="profile-team">${p.team || "—"}</div>
         <div class="profile-division">${p.division} Division</div>
       </div>
@@ -627,19 +631,21 @@ function renderProfile(p){
 function findPlayer(name){
   const target = norm(name).toLowerCase();
   return roster.find(p=> p.name.toLowerCase() === target)
-    || roster.find(p=> p.name.toLowerCase().includes(target));
+    || roster.find(p=> p.alias && p.alias.toLowerCase() === target)
+    || roster.find(p=> p.name.toLowerCase().includes(target))
+    || roster.find(p=> p.alias && p.alias.toLowerCase().includes(target));
 }
 function showSuggestions(query){
   const box = document.getElementById("player-suggestions");
   const q = norm(query).toLowerCase();
   if(!q){ box.classList.remove("show"); box.innerHTML=""; return; }
-  const matches = roster.filter(p=> p.name.toLowerCase().includes(q)).slice(0, 8);
+  const matches = roster.filter(p=> p.name.toLowerCase().includes(q) || (p.alias && p.alias.toLowerCase().includes(q))).slice(0, 8);
   if(!matches.length){ box.classList.remove("show"); box.innerHTML=""; return; }
   box.innerHTML = matches.map(p=>`
     <div class="suggestion-item" data-name="${p.name.replace(/"/g,'&quot;')}">
       <div>
         <div class="suggestion-name">${p.name}</div>
-        <div class="suggestion-team">${p.team || ""}</div>
+        <div class="suggestion-team">${p.team || ""}${p.alias ? ` · "${p.alias}"` : ''}</div>
       </div>
       <span class="suggestion-division">${p.division}</span>
     </div>
