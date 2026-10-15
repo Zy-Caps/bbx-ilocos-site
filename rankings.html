@@ -460,7 +460,15 @@ function swissKingTagHTML(sk){
   if(norm(sk).toLowerCase() !== "yes") return "";
   return `<span class="tag tag-swiss-king">Swiss King</span>`;
 }
-/* Weekly ranking priority: Champion > Swiss King > Finalist > 3rd Place > Placer > everyone else (by points) */
+/* Weekly ranking tiers (lower = ranked higher):
+   Champion > Swiss King > Finalist > 3rd Place > Placer
+   > made the topcut (no award) > did not make the topcut */
+function madeTopcut(r){
+  const v = norm(r.topcut).toLowerCase();
+  if(!v) return false;
+  if(["0","no","n","false","-","\u2014"].includes(v)) return false;
+  return true;
+}
 function weeklyRank(r){
   const award = norm(r.award).toLowerCase();
   const sk = norm(r.swissking).toLowerCase();
@@ -469,7 +477,16 @@ function weeklyRank(r){
   if(award === "finalist") return 2;
   if(award === "3rd place") return 3;
   if(award === "placer") return 4;
-  return 5;
+  if(madeTopcut(r)) return 5;
+  return 6;
+}
+/* Within a tier: most Swiss wins first, then fewest losses, then points, then name. */
+function compareWeekly(a, b){
+  return weeklyRank(a) - weeklyRank(b)
+      || (b.sw||0) - (a.sw||0)
+      || (a.sl||0) - (b.sl||0)
+      || (b.points||0) - (a.points||0)
+      || a.name.localeCompare(b.name);
 }
 /* A row only counts as a real participant if it shows SOME sign of play:
    a non-0-0 Swiss record, or nonzero points. If both are blank/zero,
@@ -488,6 +505,19 @@ function compareAwards(a, b){
       || (b.finalists||0) - (a.finalists||0)
       || (b.thirds||0) - (a.thirds||0)
       || (b.placers||0) - (a.placers||0)
+      || a.name.localeCompare(b.name);
+}
+/* Swiss ranking: Total Points first. Ties are broken by Swiss win rate,
+   then Topcut Attendance, then total Swiss wins, then name (stable/alphabetical). */
+function swissWinRate(r){
+  const g = (r.sw||0) + (r.sl||0);
+  return g > 0 ? (r.sw||0) / g : 0;
+}
+function compareSwiss(a, b){
+  return (b.points||0) - (a.points||0)
+      || swissWinRate(b) - swissWinRate(a)
+      || (Number(b.topcut)||0) - (Number(a.topcut)||0)
+      || (b.sw||0) - (a.sw||0)
       || a.name.localeCompare(b.name);
 }
 function fetchCSV(url){
@@ -579,10 +609,10 @@ function loadAllTime(){
       placers: Number(getField(r, idx, "Placers")) || 0,
       swissKings: Number(getField(r, idx, "Swiss Kings")) || 0
     })).filter(r=>r.name);
-    allTimeData.sort((a,b)=>b.points - a.points);
+    allTimeData.sort(compareSwiss);
   }).catch(err=>{
     console.warn("All-time leaderboard fetch failed, using sample data:", err);
-    allTimeData = SAMPLE_ALLTIME.slice().sort((a,b)=>b.points-a.points);
+    allTimeData = SAMPLE_ALLTIME.slice().sort(compareSwiss);
     document.getElementById("leaderboard-note").textContent = "Showing sample data — connect your published sheet link to go live.";
     document.getElementById("leaderboard-note").classList.add("show");
   });
@@ -607,11 +637,11 @@ function loadWeekly(){
       points: Number(getField(r, idx, "Points")) || 0
     })).filter(r=>r.name).filter(didParticipate);
 
-    parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
+    parsedRows.sort(compareWeekly);
     weeklyData = { week: currentWeekLabel || "—", rows: parsedRows };
   }).catch(err=>{
     console.warn("Weekly leaderboard fetch failed, using sample data:", err);
-    weeklyData = { week: SAMPLE_WEEKLY.week, rows: SAMPLE_WEEKLY.rows.slice().sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points) };
+    weeklyData = { week: SAMPLE_WEEKLY.week, rows: SAMPLE_WEEKLY.rows.slice().sort(compareWeekly) };
     document.getElementById("leaderboard-note").textContent = "Showing sample data — connect your published sheet link to go live.";
     document.getElementById("leaderboard-note").classList.add("show");
   });
@@ -641,7 +671,7 @@ function loadJuniorsAllTime(){
       placers: Number(getField(r, idx, "Placers")) || 0,
       swissKings: Number(getField(r, idx, "Swiss Kings")) || 0
     })).filter(r=>r.name);
-    juniorsAllTimeData.sort((a,b)=> b.points - a.points);
+    juniorsAllTimeData.sort(compareSwiss);
     juniorsHasAwardsData = juniorsAllTimeData.some(r=>
       (r.championships + r.finalists + r.thirds + r.placers + r.swissKings) > 0);
   }).catch(err=>{
@@ -673,7 +703,7 @@ function loadJuniorsRecent(){
       swissking: norm(getField(r, idx, "Swiss King")),
       points: Number(getField(r, idx, "Points")) || 0
     })).filter(r=>r.name).filter(didParticipate);
-    parsedRows.sort((a,b)=> weeklyRank(a) - weeklyRank(b) || b.points - a.points);
+    parsedRows.sort(compareWeekly);
     juniorsRecentData = { rows: parsedRows };
   }).catch(err=>{
     console.warn("Juniors Recent Tournament fetch failed:", err);
