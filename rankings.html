@@ -177,7 +177,8 @@
   }
   .board-row:last-child{border-bottom:none;}
   .board-row.weekly{grid-template-columns:44px 40px 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr 0.7fr;}
-  .board-row.awards{grid-template-columns:44px 40px 1.3fr 0.8fr 0.6fr 0.6fr 0.6fr 0.6fr 0.7fr;}
+  .board-row.awards{grid-template-columns:44px 40px minmax(120px,1.3fr) minmax(100px,0.9fr) repeat(5, minmax(96px,1fr));}
+  .board-row.head.awards > div:nth-child(n+5){text-align:center; line-height:1.3;}
 
   .rank-ring{
     position:relative; width:38px; height:38px; border-radius:50%;
@@ -273,6 +274,7 @@
     .cell-team, .cell-wl, .cell-topcut, .cell-award, .cell-swiss, .cell-award-count{
       grid-column:3; font-size:0.8rem;
     }
+    .cell-award-count{text-align:left;}
     .cell-label{display:inline; color:var(--text-faint); margin-right:5px;}
     .cell-points{grid-column:3; text-align:left; margin-top:4px;}
   }
@@ -799,7 +801,7 @@ function renderBoard(containerId, mode, rows, emptyMsg){
   } else if(mode === "awards"){
     let html = `
       <div class="board-row head awards">
-        <div></div><div></div><div>Blader</div><div>Team</div><div>Champs</div><div>Swiss Kings</div><div>Finals</div><div>3rds</div><div>Placers</div>
+        <div></div><div></div><div>Blader</div><div>Team</div><div>Championships</div><div>Swiss Kings</div><div>Finalists</div><div>3rd Places</div><div>Placers</div>
       </div>`;
     rows.forEach((r,i)=>{
       html += `
@@ -808,10 +810,10 @@ function renderBoard(containerId, mode, rows, emptyMsg){
           ${avatarHTML(r.name, r.photo, "board")}
           <div class="blader-cell"><a class="blader-name" href="player.html?name=${encodeURIComponent(r.name)}">${r.name}</a></div>
           <div class="cell-team"><span class="cell-label">Team</span>${r.team}</div>
-          <div class="cell-award-count"><span class="cell-label">Champs</span><span class="n">${r.championships||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">Championships</span><span class="n">${r.championships||0}</span></div>
           <div class="cell-award-count"><span class="cell-label">Swiss Kings</span><span class="n">${r.swissKings||0}</span></div>
-          <div class="cell-award-count"><span class="cell-label">Finals</span><span class="n">${r.finalists||0}</span></div>
-          <div class="cell-award-count"><span class="cell-label">3rds</span><span class="n">${r.thirds||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">Finalists</span><span class="n">${r.finalists||0}</span></div>
+          <div class="cell-award-count"><span class="cell-label">3rd Places</span><span class="n">${r.thirds||0}</span></div>
           <div class="cell-award-count"><span class="cell-label">Placers</span><span class="n">${r.placers||0}</span></div>
         </div>`;
     });
